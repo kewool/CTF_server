@@ -11,5 +11,5 @@ async def root():
 @app.get('/ctf')
 def root():
     token="abcd"
-    os.system(f"docker run --name {token} -p 3000 ctf_1")
+    os.system(f"docker run -d --name {token} -p 3000 ctf_1")
     return 'ctf'
