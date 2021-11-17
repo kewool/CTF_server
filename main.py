@@ -5,9 +5,16 @@ import os
 import random as rd
 from db import *
 
+token_gl="abcd"
 
 app = FastAPI()
 templates = Jinja2Templates(directory="pages")
+
+def run_docker(token):
+    try:
+        os.system(f"docker run -e TOKEN={token} -d --rm --name {token} -p {rd.randrange(8000,65535)}:3000 --cpus=0.1 --memory=128m ctf_1")
+    except:
+        run_docker()
 
 @app.get("/")
 async def main():
@@ -23,10 +30,17 @@ def login_page():
 
 @app.get('/api/ctf')
 def ctf_api():
-    return os.popen(f"docker ps | grep {token}").read()
+    return os.popen(f"docker ps | grep {token_gl}").read()
 
 @app.post('/api/ctf')
 def ctf_api():
-    token="abcd"
-    os.system(f"docker run -d --name {token} -p {rd.random(8000,65535)}:3000 --cpus=0.1 --memory=128m ctf_1")
-    return os.popen(f"docker ps | grep {token}").read()
+    run_docker(token_gl)
+    return os.popen(f"docker ps | grep {token_gl}").read()
+
+@app.get('/api/ctf/{token}')
+def ctf_api(token:str):
+    try:
+        os.system(f"docker kill {token}")
+    except:
+        return 'failed'
+    return 'successful'
