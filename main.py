@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import os
+import random as rd
 from db import *
 
 
@@ -27,5 +28,5 @@ def ctf_api():
 @app.post('/api/ctf')
 def ctf_api():
     token="abcd"
-    os.system(f"docker run -d --name {token} -p 3000 ctf_1")
+    os.system(f"docker run -d --name {token} -p {rd.random(8000,65535)}:3000 --cpus=0.1 --memory=128m ctf_1")
     return os.popen(f"docker ps | grep {token}").read()
