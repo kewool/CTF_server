@@ -6,7 +6,10 @@ WORKDIR /app
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-RUN chmod 777 /app/run.sh /app/main.py
+RUN chmod 777 /app/run.sh /app/main.py /app/healthcheck.sh
+
+HEALTHCHECK --interval=20m CMD ./healthcheck.sh
+
 ENTRYPOINT /app/run.sh
 
 EXPOSE 3000
