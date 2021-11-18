@@ -1,10 +1,10 @@
 #!/bin/bash
 
-NET=netstat -tupn | grep 3000
-#TOKEN_VAL=`printenv TOKEN`
-TOKEN='abcd'
+PORT_VAL=`printenv PORT`
+NET=`netstat -tupn | grep ${PORT_VAL}`
+TOKEN_VAL=`printenv TOKEN`
 
 if [ $NET = '']
 then
-    curl `https://ctf.kewool.net/api/ctf/${TOKEN}`
+    curl "https://ctf.kewool.net/api/ctf/${TOKEN_VAL}"
 fi

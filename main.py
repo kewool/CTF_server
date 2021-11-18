@@ -23,15 +23,20 @@ async def main():
 @app.get("/login")
 async def login_page(request:Request):
     return templates.TemplateResponse("login/index.html", {"request":request})
-
 @app.post('/login')
 def login_page():
+    return
+
+@app.get("/register")
+async def register_page(request:Request):
+    return templates.TemplateResponse("register/index.html", {"request":request})
+@app.post('/register')
+def register_page():
     return
 
 @app.get('/api/ctf')
 def ctf_api():
     return os.popen(f"docker ps | grep {token_gl}").read()
-
 @app.post('/api/ctf')
 def ctf_api():
     run_docker(token_gl)

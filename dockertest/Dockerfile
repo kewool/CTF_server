@@ -1,8 +1,11 @@
 FROM python:3.9
 
+ENV PORT 3000
+
 COPY . /app
 WORKDIR /app
 
+RUN apt-get -y update
 RUN apt-get install -y net-tools
 
 RUN pip install --upgrade pip
