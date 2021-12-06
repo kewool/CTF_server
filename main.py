@@ -1,14 +1,8 @@
-from fastapi import FastAPI, Request
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from flask import Flask, render_template, request
 import os
 import random as rd
 from db import *
-
-token_gl="abcd"
-
-app = FastAPI()
-templates = Jinja2Templates(directory="pages")
+app = Flask(__name__, template_folder="pages/")
 
 def run_docker(token):
     try:
@@ -16,36 +10,39 @@ def run_docker(token):
     except:
         run_docker()
 
-@app.get("/")
-async def main():
-    return sqlite3.version
+@app.route("/", methods=['GET','POST'])
+def main():
+    if request.method == 'GET':
+        return sqlite3.version
 
-@app.get("/login")
-async def login_page(request:Request):
-    return templates.TemplateResponse("login/index.html", {"request":request})
-@app.post('/login')
+@app.route("/login", methods=['GET','POST'])
 def login_page():
-    return
+    if request.method == 'GET':
+        return render_template("login/index.html")
+    elif request.method == 'POST':
+        return
 
-@app.get("/register")
-async def register_page(request:Request):
-    return templates.TemplateResponse("register/index.html", {"request":request})
-@app.post('/register')
+@app.route("/register", methods=['GET','POST'])
 def register_page():
-    return
+    if request.method == 'GET':
+        return render_template("register/index.html")
+    elif request.method == 'POST':
+        return
 
-@app.get('/api/ctf')
+@app.route('/api/ctf', methods=['POST'])
 def ctf_api():
-    return os.popen(f"docker ps | grep {token_gl}").read()
-@app.post('/api/ctf')
-def ctf_api():
-    run_docker(token_gl)
-    return os.popen(f"docker ps | grep {token_gl}").read()
+    if request.method == 'POST':
+        token = request.form['token']
+        run_docker(token)
+        return os.popen(f"docker ps | grep {token}").read()
 
-@app.get('/api/ctf/{token}')
-def ctf_api(token:str):
+@app.route('/api/ctf/stop/<token>', methods=['GET'])
+def ctf_stop_api(token):
     try:
         os.system(f"docker kill {token}")
     except:
         return 'failed'
     return 'successful'
+
+if __name__ == '__main__':
+    app.run(debug=True)
