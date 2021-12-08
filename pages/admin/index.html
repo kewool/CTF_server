@@ -38,15 +38,13 @@
             </form>
         </div>
         <div>
-            <form id="problemEdit" action="">
-
-            </form>
+            <form id="problemEdit" action="{{url_for('admin_page_ctf_update')}}" method='POST'></form>
         </div>
     </div>
     <script>
         function editProblem(name) {
             addProblemHide()
-            fetch('/admin/ctf/get', {
+            fetch("{{url_for('admin_page_ctf_get')}}", {
                 method: 'POST',
                 cache: 'no-cache',
                 headers: {
@@ -56,7 +54,7 @@
                 body: `problemName=${name}`
             }).then((res) => res.json()).then((data)=>{
                 $("#problemEdit").empty();
-                $("#problemEdit").append(`<p>${name}</p><br>
+                $("#problemEdit").append(`<input type="text" name="problemName" value=${name} readonly><br>
                 <input type="text" name="problemFlag" placeholder="Flag" value=${data["ctf_problem_flag"]}><br>
                 <input type="radio" name="problemType" value="web" ${data["ctf_problem_type"] == "web" ? "checked":""}>
                 <label for="web">web</label><br>

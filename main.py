@@ -93,8 +93,13 @@ def admin_page_ctf_add():
         return {"result":problemName}
 
 @app.route("/admin/ctf/update", methods=['POST'])
-def admim_page_ctf_update():
-    return
+def admin_page_ctf_update():
+    problemName, problemFlag, problemType, problemContents, problemFile, problemVisible, *_ = request.form.values()
+    try:
+        db.execute("UPDATE ctf_problems SET ctf_problem_flag=?, ctf_problem_type=?, ctf_problem_contents=?, ctf_problem_file=?, ctf_problem_visible=? WHERE ctf_problem_name=?",(problemFlag, problemType, problemContents, problemFile, problemVisible, problemName))
+    except:
+        return {"result":"error"}
+    return {"result" : "successful"}
 
 @app.route("/admin/users", methods=['GET','POST'])
 def admin_page_users():
