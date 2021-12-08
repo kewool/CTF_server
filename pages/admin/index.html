@@ -15,7 +15,7 @@
     </div>
     <div id="ctf" style="display:none;">
         {%for problem in problem_list%}
-        <p>{{problem}}</p>
+        <div class="problemNameBox" onclick="editProblem('{{problem[0]}}')">{{problem[0]}}</div>
         {%endfor%}
         <button id="addCtf" onclick="addCtf()">add</button>
         <div id="addCtfForm" style="display:none;">

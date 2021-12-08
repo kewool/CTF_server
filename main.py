@@ -69,14 +69,17 @@ def ctf_page():
 def admin_page():
     #if not check_admin():
         #return "only admin"
-    db.execute("SELECT * FROM ctf_problems")
+    db.execute("SELECT ctf_problem_name FROM ctf_problems")
     problem_list = db.fetchall()
     return render_template("admin/index.html", problem_list=problem_list)
 
 @app.route("/admin/ctf/get", methods=['POST'])
 def admin_page_ctf_get():
     if request.method =='POST':
-        return
+        problemName = request.form
+        db.execute("SELECT * FROM ctf_problems WHERE ctf_problem_name='?'", (problemName,))
+        problem = db.fetchone()
+        return {"ctf_problem_flag":problem[1], "ctf_problem_type":problem[2], "ctf_problem_contents":problem[3], "ctf_problem_files":problem[4], "ctf_problem_visible":problem[5]}
 
 @app.route("/admin/ctf/add", methods=['POST'])
 def admin_page_ctf_add():
