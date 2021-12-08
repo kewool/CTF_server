@@ -3,7 +3,6 @@ from flask_wtf.csrf import CSRFProtect, CSRFError
 import os
 import random as rd
 from db import *
-import hashlib
 app = Flask(__name__, template_folder="pages/")
 csrf = CSRFProtect(app)
 
@@ -12,6 +11,9 @@ def run_docker(token):
         os.system(f"docker run -e TOKEN={token} -d --rm --name {token} -p {rd.randrange(8000,65535)}:3000 --cpus=0.1 --memory=128m ctf_1")
     except:
         run_docker()
+
+def check_admin():
+    return session.get("ctf_user_id") == "admin"
 
 @app.route("/", methods=['GET'])
 def main():
@@ -48,25 +50,56 @@ def register_page():
         db.execute("SELECT * from ctf_users WHERE ctf_user_id=?", (userId, ))
         if db.fetchone() == None:
             password = hashlib.sha256(userPw.encode()).hexdigest()
-            db.execute("INSERT INTO ctf_users(ctf_user_id, ctf_user_password, ctf_user_name, ctf_user_email, ctf_user_school) VALUES (?, ?, ?, ?, ?)", (userId, password, userName, userEmail, userSchool))
+            db.execute("INSERT INTO ctf_users(ctf_user_id, ctf_user_password, ctf_user_name, ctf_user_email, ctf_user_school, ctf_user_score, ctf_user_visible) VALUES (?, ?, ?, ?, ?, ?, ?)", (userId, password, userName, userEmail, userSchool, 0, 1))
         else:
             return render_template("register/index.html", idCheck=True, id=userId, name=userName, email=userEmail, school=userSchool)
         return redirect(url_for('main'))
 
 @app.route("/users", methods=['GET'])
 def user_list_page():
-    db.execute("SELECT ctf_user_name FROM ctf_users")
+    db.execute("SELECT ctf_user_name FROM ctf_users WHERE ctf_user_visible=1")
     user_list = db.fetchall()
     return render_template("user_list/index.html", user_list=user_list)
 
+@app.route("/ctf", methods=['GET'])
+def ctf_page():
+    return
+
+@app.route("/admin", methods=['GET'])
+def admin_page():
+    #if not check_admin():
+        #return "only admin"
+    db.execute("SELECT * FROM ctf_problems")
+    problem_list = db.fetchall()
+    return render_template("admin/index.html", problem_list=problem_list)
+
+@app.route("/admin/ctf/get", methods=['POST'])
+def admin_page_ctf_get():
+    if request.method =='POST':
+        return
+
+@app.route("/admin/ctf/add", methods=['POST'])
+def admin_page_ctf_add():
+    if request.method =='POST':
+        problemName, problemFlag, problemType, problemContents, problemFile, problemVisible, *_ = request.form.values()
+        visible = 1 if problemVisible == "visible" else 0
+        try:
+            db.execute("INSERT INTO ctf_problems(ctf_problem_name, ctf_problem_flag, ctf_problem_type, ctf_problem_contents, ctf_problem_file, ctf_problem_visible) VALUES (?, ?, ?, ?, ?, ?)", (problemName, problemFlag, problemType, problemContents, problemFile, visible))
+        except:
+            return {"result":"error"}
+        return {"result":problemName}
+
+@app.route("/admin/users", methods=['GET','POST'])
+def admin_page_users():
+    return render_template("admin/users.html")
+
 @app.route('/api/ctf', methods=['POST'])
 def ctf_api():
-    if request.method == 'POST':
-        token = session.get("ctf_user_id", None)
-        if token:
-            token = hashlib.sha256(token.encode()).hexdigest()
-            run_docker(token)
-        return os.popen(f"docker ps | grep {token}").read()
+    token = session.get("ctf_user_id", None)
+    if token:
+        token = hashlib.sha256(token.encode()).hexdigest()
+        run_docker(token)
+    return os.popen(f"docker ps | grep {token}").read()
 
 @app.route('/api/ctf/stop/<token>', methods=['GET'])
 def ctf_stop_api(token):

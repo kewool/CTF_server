@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="{{url_for('static',filename='js/admin.js')}}" defer></script>
+    <title>Document</title>
+</head>
+<body>
+    <button onclick="userList()">user</button>
+    <button onclick="ctfList()">ctf</button>
+    <div id="users">
+        users
+    </div>
+    <div id="ctf" style="display:none;">
+        {%for problem in problem_list%}
+        <p>{{problem}}</p>
+        {%endfor%}
+        <button id="addCtf" onclick="addCtf()">add</button>
+        <div id="addCtfForm" style="display:none;">
+            <form action="{{url_for('admin_page_ctf_add')}}" method='POST'>
+                <input type="text" name="problemName" placeholder="Problem Name"><br>
+                <input type="text" name="problemFlag" placeholder="Flag"><br>
+                <input type="radio" name="problemType" id="web" value="web">
+                <label for="web">web</label><br>
+                <input type="radio" name="problemType" id="web" value="pwnable">
+                <label for="pwnable">pwnable</label><br>
+                <input type="radio" name="problemType" id="web" value="reversing">
+                <label for="reversing">reversing</label><br>
+                <textarea name="problemContent" placeholder="Contents"></textarea><br>
+                <input type="text" name="problemFile" placeholder="File URL"><br>
+                <input type="checkbox" name="problemVisible" id="visible" value="visible" checked>
+                <label for="visible">Visible</label><br>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="submit" value="add">
+            </form>
+        </div>
+    </div>
+</body>
+</html>
