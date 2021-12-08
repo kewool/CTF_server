@@ -7,13 +7,17 @@
     <title>Document</title>
 </head>
 <body>
-    <form action="http://localhost:8000/register" method='POST'>
-        id : <input type=text name="userId" class="idBox"><br>
-        pw : <input type="password" name="userPw" class="pwBox"><br>
-        pw_check : <input type="password" name="userPwCheck" class="pwCheckBox"><br>
-        name : <input type="password" name="userName" class="nameBox"><br>
-        email : <input type="email" name="userEmail" class="emailBox"><br>
-        school : <input type="password" name="userSchool" class="schoolBox"><br>
+    {% if idCheck %}
+        <p class="idcheck">중복되는 아이디입니다.</p>
+    {% endif %}
+    <form action="{{url_for('register_page')}}" method='POST'>
+        <input type=text name="userId" id="idBox" placeholder="id" value="{{ id }}"><br>
+        <input type="password" name="userPw" id="pwBox" placeholder="password"><br>
+        <input type="password" id="pwCheckBox" placeholder="confirm password"><br>
+        <input type="text" name="userName" id="nameBox" placeholder="name" value="{{name}}"><br>
+        <input type="email" name="userEmail" id="emailBox" placeholder="email" value="{{email}}"><br>
+        <input type="text" name="userSchool" id="schoolBox" placeholder="school" value="{{school}}"><br>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <input type=submit value="회원가입">
     </form>
 </body>
