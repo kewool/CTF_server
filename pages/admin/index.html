@@ -5,28 +5,29 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="{{url_for('static',filename='js/admin.js')}}" defer></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <title>Document</title>
 </head>
 <body>
     <button onclick="userList()">user</button>
-    <button onclick="ctfList()">ctf</button>
+    <button onclick="problemList()">ctf</button>
     <div id="users">
         users
     </div>
-    <div id="ctf" style="display:none;">
+    <div id="problem" style="display:none;">
         {%for problem in problem_list%}
         <div class="problemNameBox" onclick="editProblem('{{problem[0]}}')">{{problem[0]}}</div>
         {%endfor%}
-        <button id="addCtf" onclick="addCtf()">add</button>
-        <div id="addCtfForm" style="display:none;">
+        <button id="addProblem" onclick="addProblem()">add</button>
+        <div id="addProblemForm" style="display:none;">
             <form action="{{url_for('admin_page_ctf_add')}}" method='POST'>
                 <input type="text" name="problemName" placeholder="Problem Name"><br>
                 <input type="text" name="problemFlag" placeholder="Flag"><br>
-                <input type="radio" name="problemType" id="web" value="web">
+                <input type="radio" name="problemType" value="web">
                 <label for="web">web</label><br>
-                <input type="radio" name="problemType" id="web" value="pwnable">
+                <input type="radio" name="problemType" value="pwnable">
                 <label for="pwnable">pwnable</label><br>
-                <input type="radio" name="problemType" id="web" value="reversing">
+                <input type="radio" name="problemType" value="reversing">
                 <label for="reversing">reversing</label><br>
                 <textarea name="problemContent" placeholder="Contents"></textarea><br>
                 <input type="text" name="problemFile" placeholder="File URL"><br>
@@ -36,6 +37,41 @@
                 <input type="submit" value="add">
             </form>
         </div>
+        <div>
+            <form id="problemEdit" action="">
+
+            </form>
+        </div>
     </div>
+    <script>
+        function editProblem(name) {
+            addProblemHide()
+            fetch('/admin/ctf/get', {
+                method: 'POST',
+                cache: 'no-cache',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    "X-CSRFToken": "{{ csrf_token() }}"
+                },
+                body: `problemName=${name}`
+            }).then((res) => res.json()).then((data)=>{
+                $("#problemEdit").empty();
+                $("#problemEdit").append(`<p>${name}</p><br>
+                <input type="text" name="problemFlag" placeholder="Flag" value=${data["ctf_problem_flag"]}><br>
+                <input type="radio" name="problemType" value="web" ${data["ctf_problem_type"] == "web" ? "checked":""}>
+                <label for="web">web</label><br>
+                <input type="radio" name="problemType" value="pwnable" ${data["ctf_problem_type"] == "pwnable" ? "checked":""}>
+                <label for="pwnable">pwnable</label><br>
+                <input type="radio" name="problemType" value="reversing" ${data["ctf_problem_type"] == "reversing" ? "checked":""}>
+                <label for="reversing">reversing</label><br>
+                <textarea name="problemContent" placeholder="Contents">${data["ctf_problem_contents"]}</textarea><br>
+                <input type="text" name="problemFile" placeholder="File URL" value=${data["ctf_problem_file"]}><br>
+                <input type="checkbox" name="problemVisible" id="visible" value="visible" ${data["ctf_problem_visible"] ? "checked":""}>
+                <label for="visible">Visible</label><br>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="submit" value="add">`);
+            });
+        }
+    </script>
 </body>
 </html>

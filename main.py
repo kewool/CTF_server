@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from flask_wtf.csrf import CSRFProtect, CSRFError
 import os
 import random as rd
@@ -76,10 +76,10 @@ def admin_page():
 @app.route("/admin/ctf/get", methods=['POST'])
 def admin_page_ctf_get():
     if request.method =='POST':
-        problemName = request.form
-        db.execute("SELECT * FROM ctf_problems WHERE ctf_problem_name='?'", (problemName,))
+        problemName = request.form["problemName"]
+        db.execute("SELECT * FROM ctf_problems WHERE ctf_problem_name=?", (problemName,))
         problem = db.fetchone()
-        return {"ctf_problem_flag":problem[1], "ctf_problem_type":problem[2], "ctf_problem_contents":problem[3], "ctf_problem_files":problem[4], "ctf_problem_visible":problem[5]}
+        return {"ctf_problem_flag":problem[1], "ctf_problem_type":problem[2], "ctf_problem_contents":problem[3], "ctf_problem_file":problem[4], "ctf_problem_visible":problem[5]}
 
 @app.route("/admin/ctf/add", methods=['POST'])
 def admin_page_ctf_add():
@@ -91,6 +91,10 @@ def admin_page_ctf_add():
         except:
             return {"result":"error"}
         return {"result":problemName}
+
+@app.route("/admin/ctf/update", methods=['POST'])
+def admim_page_ctf_update():
+    return
 
 @app.route("/admin/users", methods=['GET','POST'])
 def admin_page_users():
