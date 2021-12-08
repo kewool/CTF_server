@@ -10,7 +10,7 @@
     {% if idCheck %}
         <p class="idcheck">아이디나 비밀번호가 일치하지 않습니다.</p>
     {% endif %}
-    <form action="http://localhost:5324/login" method='POST'>
+    <form action="{{ url_for('login_page') }}" method='POST'>
         <input type=text name="userId" id="idBox" placeholder="id"><br>
         <input type="password" name="userPw" id="pwBox" placeholder="password"><br>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>

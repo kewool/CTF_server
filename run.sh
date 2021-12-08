@@ -1,1 +1,1 @@
-uvicorn main:app --port=5324
+python3 main.py
