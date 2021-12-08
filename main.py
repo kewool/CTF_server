@@ -53,6 +53,12 @@ def register_page():
             return render_template("register/index.html", idCheck=True, id=userId, name=userName, email=userEmail, school=userSchool)
         return redirect(url_for('main'))
 
+@app.route("/users", methods=['GET'])
+def user_list_page():
+    db.execute("SELECT ctf_user_name FROM ctf_users")
+    user_list = db.fetchall()
+    return render_template("user_list/index.html", user_list=user_list)
+
 @app.route('/api/ctf', methods=['POST'])
 def ctf_api():
     if request.method == 'POST':

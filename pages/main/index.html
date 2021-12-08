@@ -10,6 +10,7 @@
     {% if userId %}
         <p>{{ userId }}</p>
         <a href="{{url_for('logout')}}">로그아웃</a>
+        <a href="{{url_for('user_list_page')}}">유저목록</a>
         <form action="{{url_for('ctf_api')}}" method='POST'>
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input type="submit" value="컨테이너 열기">
