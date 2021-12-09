@@ -1,19 +1,23 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, abort
 from flask_wtf.csrf import CSRFProtect, CSRFError
 import os
 import random as rd
 from db import *
 app = Flask(__name__, template_folder="pages/")
 csrf = CSRFProtect(app)
+SECRET_KEY = os.urandom(32)
 
 def run_docker(token):
     try:
-        os.system(f"docker run -e TOKEN={token} -d --rm --name {token} -p {rd.randrange(8000,65535)}:3000 --cpus=0.1 --memory=128m ctf_1")
+        os.system(f"docker run -e TOKEN={token} -d --rm --name {token} -p {rd.randrange(20000,30000)}:3000 --cpus=0.1 --memory=128m ctf_1")
     except:
         run_docker()
 
 def check_admin():
-    return session.get("ctf_user_id") == "admin"
+    return session.get("ctf_user_id") != "admin"
+
+def check_login():
+    return session.get("ctf_user_id", None) == None
 
 @app.route("/", methods=['GET'])
 def main():
@@ -63,15 +67,17 @@ def user_list_page():
 
 @app.route("/ctf", methods=['GET'])
 def ctf_page():
-    return
+    return render_template("ctf/index.html")
 
 @app.route("/admin", methods=['GET'])
 def admin_page():
-    #if not check_admin():
-        #return "only admin"
+    # if check_admin():
+    #     abort(404)
+    db.execute("SELECT ctf_user_id, ctf_user_name FROM ctf_users")
+    user_list = db.fetchall()
     db.execute("SELECT ctf_problem_name FROM ctf_problems")
     problem_list = db.fetchall()
-    return render_template("admin/index.html", problem_list=problem_list)
+    return render_template("admin/index.html", user_list=user_list, problem_list=problem_list)
 
 @app.route("/admin/ctf/get", methods=['POST'])
 def admin_page_ctf_get():
@@ -95,22 +101,41 @@ def admin_page_ctf_add():
 @app.route("/admin/ctf/update", methods=['POST'])
 def admin_page_ctf_update():
     problemName, problemFlag, problemType, problemContents, problemFile, problemVisible, *_ = request.form.values()
+    visible = 1 if problemVisible == "visible" else 0
     try:
-        db.execute("UPDATE ctf_problems SET ctf_problem_flag=?, ctf_problem_type=?, ctf_problem_contents=?, ctf_problem_file=?, ctf_problem_visible=? WHERE ctf_problem_name=?",(problemFlag, problemType, problemContents, problemFile, problemVisible, problemName))
+        db.execute("UPDATE ctf_problems SET ctf_problem_flag=?, ctf_problem_type=?, ctf_problem_contents=?, ctf_problem_file=?, ctf_problem_visible=? WHERE ctf_problem_name=?",(problemFlag, problemType, problemContents, problemFile, visible, problemName))
     except:
         return {"result":"error"}
     return {"result" : "successful"}
 
-@app.route("/admin/users", methods=['GET','POST'])
-def admin_page_users():
-    return render_template("admin/users.html")
+@app.route("/admin/user/get", methods=['POST'])
+def admin_page_user_get():
+    userId = request.form["userId"]
+    db.execute("SELECT * FROM ctf_users WHERE ctf_user_id=?", (userId, ))
+    user = db.fetchall()
+    return {"ctf_user_name":user[2], "ctf_user_email":user[3], "ctf_user_school":user[4], "ctf_user_visible":user[6]}
 
-@app.route('/api/ctf', methods=['POST'])
-def ctf_api():
-    token = session.get("ctf_user_id", None)
-    if token:
-        token = hashlib.sha256(token.encode()).hexdigest()
-        run_docker(token)
+@app.route("/admin/user/update", methods=['POST'])
+def admin_page_user_update():
+    userId = request.form["userId"]
+    db.execute("SELECT * FROM ctf_users WHERE ctf_user_id=?", (userId, ))
+    user = db.fetchall()
+    return {"ctf_user_name":user[2], "ctf_user_email":user[3], "ctf_user_school":user[4], "ctf_user_visible":user[6]}
+
+@app.route("/api/ctf/get", methods=['POST'])
+def ctf_get_api():
+    if check_login():
+        abort(401)
+    token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest()
+    return os.popen(f"docker ps | grep {token}").read()
+
+@app.route('/api/ctf/run', methods=['POST'])
+def ctf_run_api():
+    if check_login():
+        abort(401)
+    token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest()
+    os.system(f"docker kill {token}")
+    run_docker(token)
     return os.popen(f"docker ps | grep {token}").read()
 
 @app.route('/api/ctf/stop/<token>', methods=['GET'])
@@ -126,5 +151,5 @@ def handle_csrf_error(e):
     return render_template('error/index.html')
 
 if __name__ == '__main__':
-    app.config["SECRET_KEY"] = os.urandom(32)
+    app.config["SECRET_KEY"] = SECRET_KEY
     app.run(port=5324, debug=True)

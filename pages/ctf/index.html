@@ -7,6 +7,9 @@
     <title>Document</title>
 </head>
 <body>
-    
+    <form action="{{url_for('ctf_run_api')}}" method='POST'>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="submit" value="open">
+    </form>
 </body>
 </html>

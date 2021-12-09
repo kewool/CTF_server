@@ -5,71 +5,44 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="{{url_for('static',filename='js/admin.js')}}" defer></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <title>Document</title>
 </head>
 <body>
     <button onclick="userList()">user</button>
     <button onclick="problemList()">ctf</button>
     <div id="users">
-        users
+        {%for user in user_list%}
+        <div class="userNameBox" onclick="editUser(`{{url_for('admin_page_user_get')}}`, '{{user[0]}}', '{{csrf_token()}}')">{{user[0]}}({{user[1]}})</div>
+        <div>
+            <form id="userForm" action="{{url_for('admin_page_user_get')}}" method='POST' style="display:none;">
+                
+            </form>
+        </div>
+        {%endfor%}
     </div>
     <div id="problem" style="display:none;">
         {%for problem in problem_list%}
-        <div class="problemNameBox" onclick="editProblem('{{problem[0]}}')">{{problem[0]}}</div>
+        <div class="problemNameBox" onclick="editProblem(`{{url_for('admin_page_ctf_get')}}`, '{{problem[0]}}', '{{ csrf_token() }}', `{{url_for('admin_page_ctf_update')}}`)">{{problem[0]}}</div>
         {%endfor%}
-        <button id="addProblem" onclick="addProblem()">add</button>
-        <div id="addProblemForm" style="display:none;">
-            <form action="{{url_for('admin_page_ctf_add')}}" method='POST'>
-                <input type="text" name="problemName" placeholder="Problem Name"><br>
-                <input type="text" name="problemFlag" placeholder="Flag"><br>
-                <input type="radio" name="problemType" value="web">
+        <button id="addProblem" onclick="addProblem(`{{url_for('admin_page_ctf_add')}}`)">add</button>
+        <div>
+            <form id="problemForm" method='POST' style="display:none;">
+                <input type="text" name="problemName" id="problemName" placeholder="Problem Name"><br>
+                <input type="text" name="problemFlag" id="problemFlag" placeholder="Flag"><br>
+                <input type="radio" name="problemType" id="web" value="web">
                 <label for="web">web</label><br>
-                <input type="radio" name="problemType" value="pwnable">
+                <input type="radio" name="problemType" id="pwnable" value="pwnable">
                 <label for="pwnable">pwnable</label><br>
-                <input type="radio" name="problemType" value="reversing">
+                <input type="radio" name="problemType" id="reversing" value="reversing">
                 <label for="reversing">reversing</label><br>
-                <textarea name="problemContent" placeholder="Contents"></textarea><br>
-                <input type="text" name="problemFile" placeholder="File URL"><br>
-                <input type="checkbox" name="problemVisible" id="visible" value="visible" checked>
-                <label for="visible">Visible</label><br>
+                <textarea name="problemContents" id="problemContents" placeholder="Contents"></textarea><br>
+                <input type="text" name="problemFile" id="problemFile" placeholder="File URL"><br>
+                <input type="checkbox" name="problemVisible" id="problemVisible" value="visible">
+                <label for="problemVisible">Visible</label><br>
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="submit" value="add">
+                <input type="submit" id="submit">
             </form>
         </div>
-        <div>
-            <form id="problemEdit" action="{{url_for('admin_page_ctf_update')}}" method='POST'></form>
-        </div>
     </div>
-    <script>
-        function editProblem(name) {
-            addProblemHide()
-            fetch("{{url_for('admin_page_ctf_get')}}", {
-                method: 'POST',
-                cache: 'no-cache',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    "X-CSRFToken": "{{ csrf_token() }}"
-                },
-                body: `problemName=${name}`
-            }).then((res) => res.json()).then((data)=>{
-                $("#problemEdit").empty();
-                $("#problemEdit").append(`<input type="text" name="problemName" value=${name} readonly><br>
-                <input type="text" name="problemFlag" placeholder="Flag" value=${data["ctf_problem_flag"]}><br>
-                <input type="radio" name="problemType" value="web" ${data["ctf_problem_type"] == "web" ? "checked":""}>
-                <label for="web">web</label><br>
-                <input type="radio" name="problemType" value="pwnable" ${data["ctf_problem_type"] == "pwnable" ? "checked":""}>
-                <label for="pwnable">pwnable</label><br>
-                <input type="radio" name="problemType" value="reversing" ${data["ctf_problem_type"] == "reversing" ? "checked":""}>
-                <label for="reversing">reversing</label><br>
-                <textarea name="problemContent" placeholder="Contents">${data["ctf_problem_contents"]}</textarea><br>
-                <input type="text" name="problemFile" placeholder="File URL" value=${data["ctf_problem_file"]}><br>
-                <input type="checkbox" name="problemVisible" id="visible" value="visible" ${data["ctf_problem_visible"] ? "checked":""}>
-                <label for="visible">Visible</label><br>
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="submit" value="add">`);
-            });
-        }
-    </script>
 </body>
 </html>
