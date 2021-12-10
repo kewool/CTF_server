@@ -11,5 +11,12 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <input type="submit" value="open">
     </form>
+    {% for problem in problemList%}
+    <p>{{problem}}</p>
+    {% endfor %}
+    <div>
+        <input type="text" placeholder="Flag" id="flag">
+        <input type="submit" value="submit">
+    </div>
 </body>
 </html>

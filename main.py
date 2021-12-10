@@ -54,7 +54,7 @@ def register_page():
         db.execute("SELECT * from ctf_users WHERE ctf_user_id=?", (userId, ))
         if db.fetchone() == None:
             password = hashlib.sha256(userPw.encode()).hexdigest()
-            db.execute("INSERT INTO ctf_users(ctf_user_id, ctf_user_password, ctf_user_name, ctf_user_email, ctf_user_school, ctf_user_score, ctf_user_solved, ctf_user_visible) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (userId, password, userName, userEmail, userSchool, 0, 0, 1))
+            db.execute("INSERT INTO ctf_users(ctf_user_id, ctf_user_password, ctf_user_name, ctf_user_email, ctf_user_school, ctf_user_score, ctf_user_solved, ctf_user_visible) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (userId, password, userName, userEmail, userSchool, -1, 0, 1))
         else:
             return render_template("register/index.html", idCheck=True, id=userId, name=userName, email=userEmail, school=userSchool)
         return redirect(url_for('main'))
@@ -67,7 +67,28 @@ def user_list_page():
 
 @app.route("/ctf", methods=['GET'])
 def ctf_page():
-    return render_template("ctf/index.html")
+    db.execute("SELECT * FROM ctf_problems")
+    problemList = db.fetchall()
+    return render_template("ctf/index.html", problemList=problemList)
+
+@app.route("/api/flag/submit", methods=['POST'])
+def flag_submit():
+    if check_login():
+        abort(401)
+    userId = session.get("ctf_user_id")
+    problemName, flag, *_ = request.form.values()
+    db.execute("SELECT ctf_problem_flag FROM ctf_problems WHERE ctf_problem_name=?", (problemName, ))
+    correctFlag = db.fetchone()[0]
+    if(flag == correctFlag):
+        db.execute("UPDATE ctf_users SET ctf_user_solved=ctf_user_solved+1 WHERE ctf_user_id=?", (userId, ))
+        db.execute("INSERT INTO ctf_solved(ctf_user_id, ctf_problem_name) VALUES (?, ?)", (userId, problemName))
+        db.execute("UPDATE ctf_problems SET ctf_problem_solved=ctf_problem_solved+1, ctf_problem_score=ctf_problem_score-(ctf_problem_solved*2) WHERE ctf_problem_name=?", (problemName, ))
+        db.execute("SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name=?", (problemName, ))
+        userList = db.fetchall()
+        db.execute("SELECT ctf_problem_solved FROM ctf_problems WHERE ctf_problem_name=?", (problemName, ))
+        solved = db.fetchone()[0] ** 2
+        db.execute("UPDATE ctf_users SET ctf_user_score=ctf_user_score-?", (solved, ))
+    return
 
 @app.route("/admin", methods=['GET'])
 def admin_page():
@@ -79,7 +100,7 @@ def admin_page():
     problem_list = db.fetchall()
     return render_template("admin/index.html", user_list=user_list, problem_list=problem_list)
 
-@app.route("/admin/ctf/get", methods=['POST'])
+@app.route("/api/admin/ctf/get", methods=['POST'])
 def admin_page_ctf_get():
     if check_admin():
         abort(404)
@@ -88,7 +109,7 @@ def admin_page_ctf_get():
     problem = db.fetchone()
     return {"ctf_problem_flag":problem[1], "ctf_problem_type":problem[2], "ctf_problem_contents":problem[3], "ctf_problem_file":problem[4], "ctf_problem_visible":problem[7]}
 
-@app.route("/admin/ctf/add", methods=['POST'])
+@app.route("/api/admin/ctf/add", methods=['POST'])
 def admin_page_ctf_add():
     if check_admin():
         abort(404)
@@ -100,7 +121,7 @@ def admin_page_ctf_add():
         return {"result":"error"}
     return {"result":problemName}
 
-@app.route("/admin/ctf/update", methods=['POST'])
+@app.route("/api/admin/ctf/update", methods=['POST'])
 def admin_page_ctf_update():
     if check_admin():
         abort(404)
@@ -112,27 +133,29 @@ def admin_page_ctf_update():
         return {"result":"error"}
     return {"result" : "successful"}
 
-@app.route("/admin/ctf/delete", methods=['POST'])
+@app.route("/api/admin/ctf/delete", methods=['POST'])
 def admin_page_ctf_delete():
     problemName, *_ = request.form.values()
     db.execute("SELECT ctf_problem_score FROM ctf_problems WHERE ctf_problem_name=?", (problemName, ))
-    problemScore = db.fetchone()
+    problemScore = db.fetchone()[0]
     try:
         db.execute("DELETE FROM ctf_problems WHERE ctf_problem_name=?", (problemName, ))
     except:
         return {"result":"error"}
     db.execute("SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name=?", (problemName, ))
     solved = db.fetchall()
-    for i in solved:
-        db.execute("SELECT ctf_user_score, ctf_user_solved FROM ctf_users WHERE ctf_user_id=?", (i[0], ))
-        user = db.fetchone()
-        userScore = user[0] - problemScore
-        userSolved = user[1] - 1
-        db.execute("UPDATE ctf_users SET ctf_user_score=?, ctf_user_solved=? WHERE ctf_user_id=?", (userScore, userSolved, i[0]))
+    # for i in solved:
+    #     db.execute("SELECT ctf_user_score, ctf_user_solved FROM ctf_users WHERE ctf_user_id=?", (i[0], ))
+    #     user = db.fetchone()
+    #     userScore = user[0] - problemScore
+    #     userSolved = user[1] - 1
+    #     db.execute("UPDATE ctf_users SET ctf_user_score=?, ctf_user_solved=? WHERE ctf_user_id=?", (userScore, userSolved, i[0]))
+    solved = list(solved)
+    db.execute("UPDATE ctf_users SET ctf_user_score=ctf_user_score-?, ctf_user_solved=ctf_user_solved-1 WHERE ctf_user_id IN ?", (problemScore, solved))
     db.execute("DELETE FROM ctf_solved WHERE ctf_problem_name=?", (problemName, ))
     return {"result":"succesful"}
 
-@app.route("/admin/user/get", methods=['POST'])
+@app.route("/api/admin/user/get", methods=['POST'])
 def admin_page_user_get():
     if check_admin():
         abort(404)
@@ -142,7 +165,7 @@ def admin_page_user_get():
     print(user)
     return {"ctf_user_email":user[3], "ctf_user_school":user[4], "ctf_user_visible":user[7]}
 
-@app.route("/admin/user/update", methods=['POST'])
+@app.route("/api/admin/user/update", methods=['POST'])
 def admin_page_user_update():
     if check_admin():
         abort(404)
