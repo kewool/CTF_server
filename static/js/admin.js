@@ -1,5 +1,6 @@
 let problem = document.getElementById("problem");
 let users = document.getElementById("users");
+let checked;
 
 function problemList(){
     problem.style.display = "block";
@@ -9,6 +10,10 @@ function problemList(){
 function userList(){
     problem.style.display = "none";
     users.style.display = "block";
+}
+
+function isClick(){
+    this.className += "clicked"
 }
 
 function updateUserGet(url, id, name, csrfToken) {
@@ -113,6 +118,18 @@ function addProblem(url, csrfToken, getURL, updateURL){
     })
 }
 
-function deleteProblem(){
-    
+function deleteProblem(url, csrfToken){
+    let problemName = document.getElementById("problemName").value;
+    fetch(url,{
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            "X-CSRFToken": csrfToken
+        },
+        body:`problemName=${problemName}`
+    }).then((res) => res.json()).then((data)=>{
+        document.getElementById(problemName).remove();
+        document.getElementById("problemForm").style.display = "none";
+        document.getElementById("result").innerText = data["result"];
+    })
 }

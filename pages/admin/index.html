@@ -30,7 +30,7 @@
     </div>
     <div id="problem" style="display:none;">
         {%for problem in problem_list%}
-        <div class="problemNameBox" onclick="updateProblemGet(`{{url_for('admin_page_ctf_get')}}`, '{{problem[0]}}', '{{ csrf_token() }}', `{{url_for('admin_page_ctf_update')}}`)">{{problem[0]}}</div>
+        <div class="problemNameBox" id="{{problem[0]}}" onclick="updateProblemGet(`{{url_for('admin_page_ctf_get')}}`, '{{problem[0]}}', '{{ csrf_token() }}', `{{url_for('admin_page_ctf_update')}}`)">{{problem[0]}}</div>
         {%endfor%}
         <button id="addProblem" onclick="addProblemForm(`{{url_for('admin_page_ctf_add')}}`, '{{csrf_token()}}', `{{url_for('admin_page_ctf_get')}}`, `{{url_for('admin_page_ctf_update')}}`)">add</button>
         <div>
@@ -48,7 +48,7 @@
                 <input type="checkbox" name="problemVisible" id="problemVisible" value="visible">
                 <label for="problemVisible">Visible</label><br>
                 <input type="submit" id="problemSubmit">
-                <input type="button" id="problemDelete" value="delete" onclick="deleteProblem()">
+                <input type="button" id="problemDelete" value="delete" onclick="deleteProblem(`{{url_for('admin_page_ctf_delete')}}`, '{{csrf_token()}}')">
                 <p id="result"></p>
             </div>
         </div>
