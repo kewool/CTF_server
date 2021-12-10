@@ -11,7 +11,7 @@ function userList(){
     users.style.display = "block";
 }
 
-function editUser(url, id, name, csrfToken) {
+function updateUserGet(url, id, name, csrfToken) {
     fetch(url, {
         method: 'POST',
         cache: 'no-cache',
@@ -31,7 +31,7 @@ function editUser(url, id, name, csrfToken) {
     });
 }
 
-function editProblem(url, name, csrfToken, formURL) {
+function updateProblemGet(url, name, csrfToken, formURL) {
     fetch(url, {
         method: 'POST',
         cache: 'no-cache',
@@ -41,6 +41,7 @@ function editProblem(url, name, csrfToken, formURL) {
         },
         body: `problemName=${name}`
     }).then((res) => res.json()).then((data)=>{
+        document.getElementById("result").innerText = "";
         document.getElementById("problemName").readOnly = true;
         document.getElementById("problemName").value = name;
         document.getElementById("problemFlag").value = data["ctf_problem_flag"];
@@ -49,23 +50,69 @@ function editProblem(url, name, csrfToken, formURL) {
         problemType.map((item) => {
             if(data["ctf_problem_type"] === item) document.getElementById(item).checked = true;
         })
-        document.getElementById("problemContents").innerText = data["ctf_problem_contents"];
+        document.getElementById("problemContents").value = data["ctf_problem_contents"];
         document.getElementById("problemFile").value = data["ctf_problem_file"];
         document.getElementById("problemVisible").checked = data["ctf_problem_visible"]? true:false;
-        document.getElementById("problemForm").action = formURL;
-        document.getElementById("problemSubmit").value = "add";
+        document.getElementById("problemSubmit").value = "update";
+        document.getElementById("problemSubmit").setAttribute("onclick",`updateProblem("${formURL}", "${csrfToken}")`);
+        document.getElementById("problemDelete").style.display = "inline-block";
         document.getElementById("problemForm").style.display = "block";
     });
 }
 
-function addProblem(formURL){
+function updateProblem(url, csrfToken){
+    let type, visible;
+    for(var i of document.getElementsByName("problemType")) if(i.checked === true) type = i.value;
+    if(document.getElementById("problemVisible").checked === true) visible = "visible";
+    fetch(url,{
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            "X-CSRFToken": csrfToken
+        },
+        body:`problemName=${document.getElementById("problemName").value}&problemFlag=${document.getElementById("problemFlag").value}&problemType=${type}&problemContents=${document.getElementById("problemContents").value}&problemFile=${document.getElementById("problemFile").value}&problemVisible=${visible}`
+    }).then((res) => res.json()).then((data)=>{
+        document.getElementById("result").innerText = data["result"];
+    })
+}
+
+function addProblemForm(formURL, csrfToken, getURL, updateURL){
+    document.getElementById("result").innerText = "";
     document.getElementById("problemName").readOnly = false;
     document.getElementById("problemName").value = "";
     document.getElementById("problemFlag").value = "";
     for (var i of document.getElementsByName("problemType")) i.checked = false;
-    document.getElementById("problemContents").innerText = "";
+    document.getElementById("problemContents").value = "";
     document.getElementById("problemFile").value = "";
     document.getElementById("problemVisible").checked = true;
-    document.getElementById("problemForm").action = formURL;
+    document.getElementById("problemSubmit").setAttribute("onclick",`addProblem("${formURL}", "${csrfToken}", "${getURL}", "${updateURL}")`);
+    document.getElementById("problemSubmit").value = "add";
+    document.getElementById("problemDelete").style.display = "none";
     document.getElementById("problemForm").style.display = "block";
+}
+
+function addProblem(url, csrfToken, getURL, updateURL){
+    let type, visible;
+    for(var i of document.getElementsByName("problemType")) if(i.checked === true) type = i.value;
+    if(document.getElementById("problemVisible").checked === true) visible = "visible";
+    fetch(url,{
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            "X-CSRFToken": csrfToken
+        },
+        body:`problemName=${document.getElementById("problemName").value}&problemFlag=${document.getElementById("problemFlag").value}&problemType=${type}&problemContents=${document.getElementById("problemContents").value}&problemFile=${document.getElementById("problemFile").value}&problemVisible=${visible}`
+    }).then((res) => res.json()).then((data)=>{
+        let div = document.createElement("div");
+        div.className = "problemNameBox";
+        div.setAttribute("onclick", `updateProblemGet("${getURL}", "${data["result"]}", "${csrfToken}", "${updateURL}")`);
+        div.innerText = data["result"];
+        document.getElementsByClassName("problemNameBox")[0].before(div);
+        document.getElementById("problemSubmit").value = "update";
+        document.getElementById("problemSubmit").setAttribute("onclick",`updateProblem("${updateURL}", "${csrfToken}")`);
+    })
+}
+
+function deleteProblem(){
+    
 }

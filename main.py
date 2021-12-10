@@ -54,7 +54,7 @@ def register_page():
         db.execute("SELECT * from ctf_users WHERE ctf_user_id=?", (userId, ))
         if db.fetchone() == None:
             password = hashlib.sha256(userPw.encode()).hexdigest()
-            db.execute("INSERT INTO ctf_users(ctf_user_id, ctf_user_password, ctf_user_name, ctf_user_email, ctf_user_school, ctf_user_score, ctf_user_visible) VALUES (?, ?, ?, ?, ?, ?, ?)", (userId, password, userName, userEmail, userSchool, 0, 1))
+            db.execute("INSERT INTO ctf_users(ctf_user_id, ctf_user_password, ctf_user_name, ctf_user_email, ctf_user_school, ctf_user_score, ctf_user_solved, ctf_user_visible) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (userId, password, userName, userEmail, userSchool, 0, 0, 1))
         else:
             return render_template("register/index.html", idCheck=True, id=userId, name=userName, email=userEmail, school=userSchool)
         return redirect(url_for('main'))
@@ -71,8 +71,8 @@ def ctf_page():
 
 @app.route("/admin", methods=['GET'])
 def admin_page():
-    # if check_admin():
-    #     abort(404)
+    if check_admin():
+        abort(404)
     db.execute("SELECT ctf_user_id, ctf_user_name FROM ctf_users")
     user_list = db.fetchall()
     db.execute("SELECT ctf_problem_name FROM ctf_problems")
@@ -81,25 +81,29 @@ def admin_page():
 
 @app.route("/admin/ctf/get", methods=['POST'])
 def admin_page_ctf_get():
-    if request.method =='POST':
-        problemName = request.form["problemName"]
-        db.execute("SELECT * FROM ctf_problems WHERE ctf_problem_name=?", (problemName,))
-        problem = db.fetchone()
-        return {"ctf_problem_flag":problem[1], "ctf_problem_type":problem[2], "ctf_problem_contents":problem[3], "ctf_problem_file":problem[4], "ctf_problem_visible":problem[5]}
+    if check_admin():
+        abort(404)
+    problemName = request.form["problemName"]
+    db.execute("SELECT * FROM ctf_problems WHERE ctf_problem_name=?", (problemName,))
+    problem = db.fetchone()
+    return {"ctf_problem_flag":problem[1], "ctf_problem_type":problem[2], "ctf_problem_contents":problem[3], "ctf_problem_file":problem[4], "ctf_problem_visible":problem[6]}
 
 @app.route("/admin/ctf/add", methods=['POST'])
 def admin_page_ctf_add():
-    if request.method =='POST':
-        problemName, problemFlag, problemType, problemContents, problemFile, problemVisible, *_ = request.form.values()
-        visible = 1 if problemVisible == "visible" else 0
-        try:
-            db.execute("INSERT INTO ctf_problems(ctf_problem_name, ctf_problem_flag, ctf_problem_type, ctf_problem_contents, ctf_problem_file, ctf_problem_visible) VALUES (?, ?, ?, ?, ?, ?)", (problemName, problemFlag, problemType, problemContents, problemFile, visible))
-        except:
-            return {"result":"error"}
-        return {"result":problemName}
+    if check_admin():
+        abort(404)
+    problemName, problemFlag, problemType, problemContents, problemFile, problemVisible, *_ = request.form.values()
+    visible = 1 if problemVisible == "visible" else 0
+    try:
+        db.execute("INSERT INTO ctf_problems(ctf_problem_name, ctf_problem_flag, ctf_problem_type, ctf_problem_contents, ctf_problem_file, ctf_problem_solved, ctf_problem_visible) VALUES (?, ?, ?, ?, ?, ?, ?)", (problemName, problemFlag, problemType, problemContents, problemFile, 0, visible))
+    except:
+        return {"result":"error"}
+    return {"result":problemName}
 
 @app.route("/admin/ctf/update", methods=['POST'])
 def admin_page_ctf_update():
+    if check_admin():
+        abort(404)
     problemName, problemFlag, problemType, problemContents, problemFile, problemVisible, *_ = request.form.values()
     visible = 1 if problemVisible == "visible" else 0
     try:
@@ -110,13 +114,18 @@ def admin_page_ctf_update():
 
 @app.route("/admin/user/get", methods=['POST'])
 def admin_page_user_get():
+    if check_admin():
+        abort(404)
     userId = request.form["userId"]
     db.execute("SELECT * FROM ctf_users WHERE ctf_user_id=?", (userId, ))
     user = db.fetchone()
-    return {"ctf_user_email":user[3], "ctf_user_school":user[4], "ctf_user_visible":user[6]}
+    print(user)
+    return {"ctf_user_email":user[3], "ctf_user_school":user[4], "ctf_user_visible":user[7]}
 
 @app.route("/admin/user/update", methods=['POST'])
 def admin_page_user_update():
+    if check_admin():
+        abort(404)
     return
 
 @app.route("/api/ctf/get", methods=['POST'])
