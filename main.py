@@ -112,15 +112,12 @@ def admin_page_ctf_update():
 def admin_page_user_get():
     userId = request.form["userId"]
     db.execute("SELECT * FROM ctf_users WHERE ctf_user_id=?", (userId, ))
-    user = db.fetchall()
-    return {"ctf_user_name":user[2], "ctf_user_email":user[3], "ctf_user_school":user[4], "ctf_user_visible":user[6]}
+    user = db.fetchone()
+    return {"ctf_user_email":user[3], "ctf_user_school":user[4], "ctf_user_visible":user[6]}
 
 @app.route("/admin/user/update", methods=['POST'])
 def admin_page_user_update():
-    userId = request.form["userId"]
-    db.execute("SELECT * FROM ctf_users WHERE ctf_user_id=?", (userId, ))
-    user = db.fetchall()
-    return {"ctf_user_name":user[2], "ctf_user_email":user[3], "ctf_user_school":user[4], "ctf_user_visible":user[6]}
+    return
 
 @app.route("/api/ctf/get", methods=['POST'])
 def ctf_get_api():

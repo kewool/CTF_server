@@ -11,8 +11,7 @@ function userList(){
     users.style.display = "block";
 }
 
-function editUser(url, id, csrfToken) {
-    addProblemHide()
+function editUser(url, id, name, csrfToken) {
     fetch(url, {
         method: 'POST',
         cache: 'no-cache',
@@ -22,20 +21,13 @@ function editUser(url, id, csrfToken) {
         },
         body: `userId=${id}`
     }).then((res) => res.json()).then((data)=>{
-        document.getElementById("updateProblemName").value = id;
-        document.getElementById("updateProblemFlag").value = data["ctf_problem_flag"];
-        let problemType = [];
-        for(var i of document.getElementsByName("updateProblemType")) problemType.push(i.value);
-        problemType.map((item) => {
-            item = item.charAt(0).toUpperCase() + item.slice(1);
-            if(data["ctf_problem_type"].charAt(0).toUpperCase() + data["ctf_problem_type"].slice(1) === item) document.getElementById(`updateProblemType${item}`).checked = true;
-        })
-        document.getElementById("updateProblemContents").innerText = data["ctf_problem_contents"];
-        document.getElementById("updateProblemFile").value = data["ctf_problem_file"];
-        if(data["ctf_problem_visible"] === 1) document.getElementById("updateProblemVisible").checked = true;
-        else if(data["ctf_problem_visible"] === 0) document.getElementById("updateProblemVisible").checked = false;
-        document.getElementById("submit").value = "update";
-        document.getElementById("problemEdit").style.display = "block";
+        document.getElementById("userId").value = id;
+        document.getElementById("userPw").value = "";
+        document.getElementById("userName").value = name;
+        document.getElementById("userEmail").value = data["ctf_user_email"];
+        document.getElementById("userSchool").value = data["ctf_user_school"];
+        document.getElementById("userVisible").checked = data["ctf_user_visible"]? true:false;
+        document.getElementById("userForm").style.display = "block";
     });
 }
 
@@ -59,10 +51,9 @@ function editProblem(url, name, csrfToken, formURL) {
         })
         document.getElementById("problemContents").innerText = data["ctf_problem_contents"];
         document.getElementById("problemFile").value = data["ctf_problem_file"];
-        if(data["ctf_problem_visible"] === 1) document.getElementById("problemVisible").checked = true;
-        else if(data["ctf_problem_visible"] === 0) document.getElementById("problemVisible").checked = false;
+        document.getElementById("problemVisible").checked = data["ctf_problem_visible"]? true:false;
         document.getElementById("problemForm").action = formURL;
-        document.getElementById("submit").value = "add";
+        document.getElementById("problemSubmit").value = "add";
         document.getElementById("problemForm").style.display = "block";
     });
 }
