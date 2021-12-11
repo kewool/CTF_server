@@ -54,7 +54,7 @@ def register_page():
         db.execute("SELECT * from ctf_users WHERE ctf_user_id=?", (userId, ))
         if db.fetchone() == None:
             password = hashlib.sha256(userPw.encode()).hexdigest()
-            db.execute("INSERT INTO ctf_users(ctf_user_id, ctf_user_password, ctf_user_name, ctf_user_email, ctf_user_school, ctf_user_score, ctf_user_solved, ctf_user_visible) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (userId, password, userName, userEmail, userSchool, -1, 0, 1))
+            db.execute("INSERT INTO ctf_users(ctf_user_id, ctf_user_password, ctf_user_name, ctf_user_email, ctf_user_school, ctf_user_score, ctf_user_solved, ctf_user_try, ctf_user_visible) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (userId, password, userName, userEmail, userSchool, 0, 0, 0, 1))
         else:
             return render_template("register/index.html", idCheck=True, id=userId, name=userName, email=userEmail, school=userSchool)
         return redirect(url_for('main'))
@@ -82,13 +82,15 @@ def flag_submit():
     if(flag == correctFlag):
         db.execute("UPDATE ctf_users SET ctf_user_solved=ctf_user_solved+1 WHERE ctf_user_id=?", (userId, ))
         db.execute("INSERT INTO ctf_solved(ctf_user_id, ctf_problem_name) VALUES (?, ?)", (userId, problemName))
-        db.execute("UPDATE ctf_problems SET ctf_problem_solved=ctf_problem_solved+1, ctf_problem_score=ctf_problem_score-(ctf_problem_solved*2) WHERE ctf_problem_name=?", (problemName, ))
+        db.execute("UPDATE ctf_problems SET ctf_problem_solved=ctf_problem_solved+1 WHERE ctf_problem_name=?", (problemName, ))
+        db.execute("UPDATE ctf_problems SET ctf_problem_score=ctf_problem_score-(ctf_problem_solved-1)*2 WHERE ctf_problem_name=? AND ctf_problem_score>70", (problemName, ))
         db.execute("SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name=?", (problemName, ))
-        userList = db.fetchall()
+        users = db.fetchall()
+        userList = str([i[0] for i in users]).replace("[", "(").replace("]", ")")
         db.execute("SELECT ctf_problem_solved FROM ctf_problems WHERE ctf_problem_name=?", (problemName, ))
-        solved = db.fetchone()[0] ** 2
-        db.execute("UPDATE ctf_users SET ctf_user_score=ctf_user_score-?", (solved, ))
-    return
+        score = (db.fetchone()[0] - 1) * 2
+        db.execute(f"UPDATE ctf_users SET ctf_user_score=ctf_user_score-? WHERE ctf_user_id IN (?)", (score, userList))
+    return {"result":userList}
 
 @app.route("/admin", methods=['GET'])
 def admin_page():
@@ -143,15 +145,15 @@ def admin_page_ctf_delete():
     except:
         return {"result":"error"}
     db.execute("SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name=?", (problemName, ))
-    solved = db.fetchall()
     # for i in solved:
     #     db.execute("SELECT ctf_user_score, ctf_user_solved FROM ctf_users WHERE ctf_user_id=?", (i[0], ))
     #     user = db.fetchone()
     #     userScore = user[0] - problemScore
     #     userSolved = user[1] - 1
     #     db.execute("UPDATE ctf_users SET ctf_user_score=?, ctf_user_solved=? WHERE ctf_user_id=?", (userScore, userSolved, i[0]))
-    solved = list(solved)
-    db.execute("UPDATE ctf_users SET ctf_user_score=ctf_user_score-?, ctf_user_solved=ctf_user_solved-1 WHERE ctf_user_id IN ?", (problemScore, solved))
+    users = db.fetchall()
+    userList = str([i[0] for i in users]).replace("[", "(").replace("]", ")")
+    db.execute("UPDATE ctf_users SET ctf_user_score=ctf_user_score-?, ctf_user_solved=ctf_user_solved-1 WHERE ctf_user_id IN (?)", (problemScore, userList))
     db.execute("DELETE FROM ctf_solved WHERE ctf_problem_name=?", (problemName, ))
     return {"result":"succesful"}
 
@@ -162,7 +164,6 @@ def admin_page_user_get():
     userId = request.form["userId"]
     db.execute("SELECT * FROM ctf_users WHERE ctf_user_id=?", (userId, ))
     user = db.fetchone()
-    print(user)
     return {"ctf_user_email":user[3], "ctf_user_school":user[4], "ctf_user_visible":user[7]}
 
 @app.route("/api/admin/user/update", methods=['POST'])

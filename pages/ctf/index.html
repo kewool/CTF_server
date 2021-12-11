@@ -14,9 +14,11 @@
     {% for problem in problemList%}
     <p>{{problem}}</p>
     {% endfor %}
-    <div>
-        <input type="text" placeholder="Flag" id="flag">
+    <form action="{{url_for('flag_submit')}}" method='POST'>
+        <input type="text" name="problemName">
+        <input type="text" placeholder="Flag" name="flag" id="flag">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <input type="submit" value="submit">
-    </div>
+    </form>
 </body>
 </html>
