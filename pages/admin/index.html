@@ -10,6 +10,7 @@
 <body>
     <button onclick="userList()">user</button>
     <button onclick="problemList()">ctf</button>
+    <button onclick="solvedList()">solved</button>
     <div id="users">
         {%for user in user_list%}
         <div class="userNameBox" onclick="updateUserGet(`{{url_for('admin_page_user_get')}}`, '{{user[0]}}', '{{user[1]}}', '{{csrf_token()}}')">{{user[0]}}({{user[1]}})</div>
@@ -21,8 +22,12 @@
                 <input type="text" name="userName" id="userName"><br>
                 <input type="email" name="userEmail" id="userEmail"><br>
                 <input type="text" name="userSchool" id="userSchool"><br>
+                <span id="userScore"></span>
+                <span id="userSolved"></span>
+                <span id="userTry"></span>
                 <input type="checkbox" name="userVisible" id="userVisible" value="visible">
                 <label for="userVisible">Visible</label><br>
+                <p id="userRegisterDate"></p>
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <input type="submit" id="userSubmit">
             </form>
@@ -52,6 +57,11 @@
                 <p id="result"></p>
             </div>
         </div>
+    </div>
+    <div id="solved" style="display:none">
+        {%for solved in solved_list%}
+        <p>{{solved}}</p>
+        {%endfor%}
     </div>
 </body>
 </html>

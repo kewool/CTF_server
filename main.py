@@ -37,12 +37,12 @@ def login_page():
         if dbId == None:
             return render_template("login/index.html", idCheck=True)
         elif dbId[0] == userId:
-            session['ctf_user_id'] = userId
-        return redirect(url_for('main'))
+            session["ctf_user_id"] = userId
+        return redirect(url_for("main"))
 
-@app.route('/logout', methods=['GET'])
+@app.route("/logout", methods=['GET'])
 def logout():
-    session.pop('ctf_user_id', None)
+    session.pop("ctf_user_id", None)
     return redirect(url_for("main"))
 
 @app.route("/register", methods=['GET','POST'])
@@ -54,19 +54,44 @@ def register_page():
         db.execute("SELECT * from ctf_users WHERE ctf_user_id=?", (userId, ))
         if db.fetchone() == None:
             password = hashlib.sha256(userPw.encode()).hexdigest()
-            db.execute("INSERT INTO ctf_users(ctf_user_id, ctf_user_password, ctf_user_name, ctf_user_email, ctf_user_school, ctf_user_score, ctf_user_solved, ctf_user_try, ctf_user_visible) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (userId, password, userName, userEmail, userSchool, 0, 0, 0, 1))
+            db.execute("INSERT INTO ctf_users(ctf_user_id, ctf_user_password, ctf_user_name, ctf_user_email, ctf_user_school, ctf_user_score, ctf_user_solved, ctf_user_try, ctf_user_visible, ctf_user_register_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (userId, password, userName, userEmail, userSchool, 0, 0, 0, 1, time.time()))
         else:
             return render_template("register/index.html", idCheck=True, id=userId, name=userName, email=userEmail, school=userSchool)
         return redirect(url_for('main'))
 
 @app.route("/users", methods=['GET'])
 def user_list_page():
-    db.execute("SELECT ctf_user_name FROM ctf_users WHERE ctf_user_visible=1")
+    db.execute("SELECT ctf_user_name FROM ctf_users WHERE ctf_user_visible=1 ORDER BY ctf_user_register_date asc")
     user_list = db.fetchall()
     return render_template("user_list/index.html", user_list=user_list)
 
+@app.route("/profile", methods=['GET', 'POST'])
+def user_profile_page():
+    if check_login():
+        abort(401)
+    if request.method == 'GET':
+        user_info = db.execute("SELECT ctf_user_id, ctf_user_name, ctf_user_email, ctf_user_school FROM ctf_users WHERE ctf_user_id=?", (session.get("ctf_user_id"), )).fetchone()
+        return render_template("profile/index.html", user_info=user_info)
+    elif request.method == 'POST':
+        userName, userPw, userEmail, userSchool, *_ = request.form.values()
+        userId = session.get("ctf_user_id")
+        password = hashlib.sha256(userPw.encode()).hexdigest()
+        if db.execute("SELECT * FROM ctf_users WHERE ctf_user_id=? AND ctf_user_password=?", (userId, password)).fetchone() == None:
+            return {"result":"incorrect password"}
+        else:
+            db.execute("UPDATE ctf_users SET ctf_user_name=?, ctf_user_email=?, ctf_user_school=? WHERE ctf_user_id=? AND ctf_user_password=?", (userName, userEmail, userSchool, userId, password))
+        return {"result":"successful"}
+
+@app.route("/scoreboard", methods=['GET'])
+def user_scoreboard_page():
+    db.execute("SELECT ctf_user_name, ctf_user_score FROM ctf_users ORDER BY ctf_user_score desc, ctf_user_last_solved_date asc")
+    user_list = db.fetchall()
+    return render_template("scoreboard/index.html", user_list=user_list)
+
 @app.route("/ctf", methods=['GET'])
 def ctf_page():
+    if check_login():
+        abort(401)
     db.execute("SELECT * FROM ctf_problems")
     problemList = db.fetchall()
     return render_template("ctf/index.html", problemList=problemList)
@@ -77,11 +102,13 @@ def flag_submit():
         abort(401)
     userId = session.get("ctf_user_id")
     problemName, flag, *_ = request.form.values()
+    if db.execute("SELECT * FROM ctf_solved WHERE ctf_user_id=? AND ctf_problem_name=?", (userId, problemName)).fetchone() != None:
+        return {"result":"duplication"}
     db.execute("SELECT ctf_problem_flag FROM ctf_problems WHERE ctf_problem_name=?", (problemName, ))
     correctFlag = db.fetchone()[0]
     if(flag == correctFlag):
-        db.execute("UPDATE ctf_users SET ctf_user_solved=ctf_user_solved+1 WHERE ctf_user_id=?", (userId, ))
-        db.execute("INSERT INTO ctf_solved(ctf_user_id, ctf_problem_name) VALUES (?, ?)", (userId, problemName))
+        db.execute("UPDATE ctf_users SET ctf_user_solved=ctf_user_solved+1, ctf_user_try=ctf_user_try+1, ctf_user_score=ctf_user_score+(SELECT ctf_problem_score FROM ctf_problems WHERE ctf_problem_name=?), ctf_user_last_solved_date=? WHERE ctf_user_id=?", (problemName, time.time(), userId))
+        db.execute("INSERT INTO ctf_solved(ctf_user_id, ctf_problem_name, ctf_problem_solved_date) VALUES (?, ?, ?)", (userId, problemName, time.time()))
         db.execute("UPDATE ctf_problems SET ctf_problem_solved=ctf_problem_solved+1 WHERE ctf_problem_name=?", (problemName, ))
         db.execute("UPDATE ctf_problems SET ctf_problem_score=ctf_problem_score-(ctf_problem_solved-1)*2 WHERE ctf_problem_name=? AND ctf_problem_score>70", (problemName, ))
         db.execute("SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name=?", (problemName, ))
@@ -89,18 +116,17 @@ def flag_submit():
         userList = str([i[0] for i in users]).replace("[", "(").replace("]", ")")
         db.execute("SELECT ctf_problem_solved FROM ctf_problems WHERE ctf_problem_name=?", (problemName, ))
         score = (db.fetchone()[0] - 1) * 2
-        db.execute(f"UPDATE ctf_users SET ctf_user_score=ctf_user_score-? WHERE ctf_user_id IN (?)", (score, userList))
-    return {"result":userList}
+        db.execute(f"UPDATE ctf_users SET ctf_user_score=ctf_user_score-? WHERE ctf_user_id IN {userList}", (score, ))
+    return {"result":userList, "score":score}
 
 @app.route("/admin", methods=['GET'])
 def admin_page():
     if check_admin():
         abort(404)
-    db.execute("SELECT ctf_user_id, ctf_user_name FROM ctf_users")
-    user_list = db.fetchall()
-    db.execute("SELECT ctf_problem_name FROM ctf_problems")
-    problem_list = db.fetchall()
-    return render_template("admin/index.html", user_list=user_list, problem_list=problem_list)
+    user_list = db.execute("SELECT ctf_user_id, ctf_user_name FROM ctf_users").fetchall()
+    problem_list = db.execute("SELECT ctf_problem_name FROM ctf_problems").fetchall()
+    solved_list = db.execute("SELECT * FROM ctf_solved").fetchall()
+    return render_template("admin/index.html", user_list=user_list, problem_list=problem_list, solved_list=solved_list)
 
 @app.route("/api/admin/ctf/get", methods=['POST'])
 def admin_page_ctf_get():
@@ -145,15 +171,9 @@ def admin_page_ctf_delete():
     except:
         return {"result":"error"}
     db.execute("SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name=?", (problemName, ))
-    # for i in solved:
-    #     db.execute("SELECT ctf_user_score, ctf_user_solved FROM ctf_users WHERE ctf_user_id=?", (i[0], ))
-    #     user = db.fetchone()
-    #     userScore = user[0] - problemScore
-    #     userSolved = user[1] - 1
-    #     db.execute("UPDATE ctf_users SET ctf_user_score=?, ctf_user_solved=? WHERE ctf_user_id=?", (userScore, userSolved, i[0]))
     users = db.fetchall()
     userList = str([i[0] for i in users]).replace("[", "(").replace("]", ")")
-    db.execute("UPDATE ctf_users SET ctf_user_score=ctf_user_score-?, ctf_user_solved=ctf_user_solved-1 WHERE ctf_user_id IN (?)", (problemScore, userList))
+    db.execute(f"UPDATE ctf_users SET ctf_user_score=ctf_user_score-?, ctf_user_solved=ctf_user_solved-1 WHERE ctf_user_id IN {userList}", (problemScore, ))
     db.execute("DELETE FROM ctf_solved WHERE ctf_problem_name=?", (problemName, ))
     return {"result":"succesful"}
 
@@ -164,7 +184,7 @@ def admin_page_user_get():
     userId = request.form["userId"]
     db.execute("SELECT * FROM ctf_users WHERE ctf_user_id=?", (userId, ))
     user = db.fetchone()
-    return {"ctf_user_email":user[3], "ctf_user_school":user[4], "ctf_user_visible":user[7]}
+    return {"ctf_user_email":user[3], "ctf_user_school":user[4], "ctf_user_score":user[5], "ctf_user_solved":user[6], "ctf_user_try":user[7], "ctf_user_visible":user[8], "ctf_user_register_date":user[9]}
 
 @app.route("/api/admin/user/update", methods=['POST'])
 def admin_page_user_update():

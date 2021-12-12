@@ -1,15 +1,23 @@
 let problem = document.getElementById("problem");
 let users = document.getElementById("users");
-let checked;
+let solved = document.getElementById("solved")
 
 function problemList(){
     problem.style.display = "block";
     users.style.display = "none";
+    solved.style.display = "none";
 }
 
 function userList(){
     problem.style.display = "none";
     users.style.display = "block";
+    solved.style.display = "none";
+}
+
+function solvedList(){
+    problem.style.display = "none";
+    users.style.display = "none";
+    solved.style.display = "block";
 }
 
 function isClick(){
@@ -19,7 +27,6 @@ function isClick(){
 function updateUserGet(url, id, name, csrfToken) {
     fetch(url, {
         method: 'POST',
-        cache: 'no-cache',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             "X-CSRFToken": csrfToken
@@ -31,7 +38,11 @@ function updateUserGet(url, id, name, csrfToken) {
         document.getElementById("userName").value = name;
         document.getElementById("userEmail").value = data["ctf_user_email"];
         document.getElementById("userSchool").value = data["ctf_user_school"];
+        document.getElementById("userScore").innerText = data["ctf_user_score"];
+        document.getElementById("userSolved").innerText = data["ctf_user_solved"];
+        document.getElementById("userTry").innerText = data["ctf_user_try"];
         document.getElementById("userVisible").checked = data["ctf_user_visible"]? true:false;
+        document.getElementById("userRegisterDate").innerText = data["ctf_user_register_date"];
         document.getElementById("userForm").style.display = "block";
     });
 }
@@ -39,7 +50,6 @@ function updateUserGet(url, id, name, csrfToken) {
 function updateProblemGet(url, name, csrfToken, formURL) {
     fetch(url, {
         method: 'POST',
-        cache: 'no-cache',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             "X-CSRFToken": csrfToken

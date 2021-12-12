@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="{{url_for('static',filename='js/profile.js')}}"></script>
+</head>
+<body>
+    <div>
+        <input type="text" id="userId" value="{{user_info[0]}}" readonly><br>
+        <input type="text" name="userName" id="userName" value="{{user_info[1]}}"><br>
+        <input type="password" name="userPw" id="userPw"><br>
+        <input type="email" name="userEmail" id="userEmail" value="{{user_info[2]}}"><br>
+        <input type="text" name="userSchool" id="userSchool" value="{{user_info[3]}}"><br>
+        <input type="submit" id="submit" value="update" onclick="updateProfile(`{{url_for('user_profile_page')}}`, `{{csrf_token()}}`)">
+    </div>
+    <p id="result"></p>
+</body>
+</html>
