@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, a
 from flask_wtf.csrf import CSRFProtect, CSRFError
 import os
 import random as rd
+import datetime
 from db import *
 app = Flask(__name__, template_folder="pages/")
 csrf = CSRFProtect(app)
@@ -108,6 +109,7 @@ def flag_submit():
     correctFlag = db.fetchone()[0]
     if(flag == correctFlag):
         db.execute("UPDATE ctf_users SET ctf_user_solved=ctf_user_solved+1, ctf_user_try=ctf_user_try+1, ctf_user_score=ctf_user_score+(SELECT ctf_problem_score FROM ctf_problems WHERE ctf_problem_name=?), ctf_user_last_solved_date=? WHERE ctf_user_id=?", (problemName, time.time(), userId))
+        db.execute("INSERT INTO ctf_logs(ctf_user_name, ctf_problem_name, ctf_correct_answer, ctf_log_flag, ctf_log_date) VALUES (?, ?, ?, ?, ?)", (userId, problemName, "correct", flag, str(datetime.datetime.now())))
         db.execute("INSERT INTO ctf_solved(ctf_user_id, ctf_problem_name, ctf_problem_solved_date) VALUES (?, ?, ?)", (userId, problemName, time.time()))
         db.execute("UPDATE ctf_problems SET ctf_problem_solved=ctf_problem_solved+1 WHERE ctf_problem_name=?", (problemName, ))
         db.execute("UPDATE ctf_problems SET ctf_problem_score=ctf_problem_score-(ctf_problem_solved-1)*2 WHERE ctf_problem_name=? AND ctf_problem_score>70", (problemName, ))
@@ -126,7 +128,8 @@ def admin_page():
     user_list = db.execute("SELECT ctf_user_id, ctf_user_name FROM ctf_users").fetchall()
     problem_list = db.execute("SELECT ctf_problem_name FROM ctf_problems").fetchall()
     solved_list = db.execute("SELECT * FROM ctf_solved").fetchall()
-    return render_template("admin/index.html", user_list=user_list, problem_list=problem_list, solved_list=solved_list)
+    log_list = db.execute("SELECT * FROM ctf_logs").fetchall()
+    return render_template("admin/index.html", user_list=user_list, problem_list=problem_list, solved_list=solved_list, log_list=log_list)
 
 @app.route("/api/admin/ctf/get", methods=['POST'])
 def admin_page_ctf_get():

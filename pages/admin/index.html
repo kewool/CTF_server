@@ -11,6 +11,7 @@
     <button onclick="userList()">user</button>
     <button onclick="problemList()">ctf</button>
     <button onclick="solvedList()">solved</button>
+    <button onclick="logList()">log</button>
     <div id="users">
         {%for user in user_list%}
         <div class="userNameBox" onclick="updateUserGet(`{{url_for('admin_page_user_get')}}`, '{{user[0]}}', '{{user[1]}}', '{{csrf_token()}}')">{{user[0]}}({{user[1]}})</div>
@@ -61,6 +62,11 @@
     <div id="solved" style="display:none">
         {%for solved in solved_list%}
         <p>{{solved}}</p>
+        {%endfor%}
+    </div>
+    <div id="log" style="display:none">
+        {%for log in log_list%}
+        <p>{{log}}</p>
         {%endfor%}
     </div>
 </body>

@@ -1,23 +1,34 @@
 let problem = document.getElementById("problem");
 let users = document.getElementById("users");
-let solved = document.getElementById("solved")
+let solved = document.getElementById("solved");
+let log = document.getElementById("log");
 
 function problemList(){
     problem.style.display = "block";
     users.style.display = "none";
     solved.style.display = "none";
+    log.style.display = "none";
 }
 
 function userList(){
     problem.style.display = "none";
     users.style.display = "block";
     solved.style.display = "none";
+    log.style.display = "none";
 }
 
 function solvedList(){
     problem.style.display = "none";
     users.style.display = "none";
     solved.style.display = "block";
+    log.style.display = "none";
+}
+
+function logList(){
+    problem.style.display = "none";
+    users.style.display = "none";
+    solved.style.display = "none";
+    log.style.display = "block";
 }
 
 function isClick(){
