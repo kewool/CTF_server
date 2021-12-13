@@ -11,6 +11,10 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <input type="submit" value="open">
     </form>
+    <form action="{{url_for('ctf_get_api')}}" method='POST'>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="submit" value="get">
+    </form>
     {% for problem in problemList%}
     <p>{{problem}}</p>
     {% endfor %}

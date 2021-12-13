@@ -3,14 +3,15 @@ from flask_wtf.csrf import CSRFProtect, CSRFError
 import os
 import random as rd
 import datetime
+import re
 from db import *
 app = Flask(__name__, template_folder="pages/")
 csrf = CSRFProtect(app)
 SECRET_KEY = os.urandom(32)
 
-def run_docker(token):
+def run_docker(token, problemName):
     try:
-        os.system(f"docker run -e TOKEN={token} -d --rm --name {token} -p {rd.randrange(20000,30000)}:3000 --cpus=0.1 --memory=128m ctf_1")
+        os.system(f"docker run -e TOKEN={token} -d --rm --name {token} -p {rd.randrange(20000,30000)}:3000 --cpus=0.1 --memory=128m {problemName}")
     except:
         run_docker()
 
@@ -89,13 +90,17 @@ def user_scoreboard_page():
     user_list = db.fetchall()
     return render_template("scoreboard/index.html", user_list=user_list)
 
-@app.route("/ctf", methods=['GET'])
+@app.route("/ctf", methods=['GET','POST'])
 def ctf_page():
-    if check_login():
-        abort(401)
-    db.execute("SELECT * FROM ctf_problems")
-    problemList = db.fetchall()
-    return render_template("ctf/index.html", problemList=problemList)
+    if request.method == 'GET':
+        if check_login():
+            abort(401)
+        db.execute("SELECT ctf_problem_name, ctf_problem_score FROM ctf_problems")
+        problemList = db.fetchall()
+        return render_template("ctf/index.html", problemList=problemList)
+    if request.method == 'POST':
+        
+        return
 
 @app.route("/api/flag/submit", methods=['POST'])
 def flag_submit():
@@ -119,7 +124,11 @@ def flag_submit():
         db.execute("SELECT ctf_problem_solved FROM ctf_problems WHERE ctf_problem_name=?", (problemName, ))
         score = (db.fetchone()[0] - 1) * 2
         db.execute(f"UPDATE ctf_users SET ctf_user_score=ctf_user_score-? WHERE ctf_user_id IN {userList}", (score, ))
-    return {"result":userList, "score":score}
+    else:
+        db.execute("UPDATE ctf_users SET ctf_user_try=ctf_user_try+1 WHERE ctf_user_id=?", (userId, ))
+        db.execute("INSERT INTO ctf_logs(ctf_user_name, ctf_problem_name, ctf_correct_answer, ctf_log_flag, ctf_log_date) VALUES (?, ?, ?, ?, ?)", (userId, problemName, "incorrect", flag, str(datetime.datetime.now())))
+        return {"result":"incorrect"}
+    return {"result":"correct"}
 
 @app.route("/admin", methods=['GET'])
 def admin_page():
@@ -128,7 +137,7 @@ def admin_page():
     user_list = db.execute("SELECT ctf_user_id, ctf_user_name FROM ctf_users").fetchall()
     problem_list = db.execute("SELECT ctf_problem_name FROM ctf_problems").fetchall()
     solved_list = db.execute("SELECT * FROM ctf_solved").fetchall()
-    log_list = db.execute("SELECT * FROM ctf_logs").fetchall()
+    log_list = db.execute("SELECT * FROM ctf_logs ORDER BY ctf_log_idx desc").fetchall()
     return render_template("admin/index.html", user_list=user_list, problem_list=problem_list, solved_list=solved_list, log_list=log_list)
 
 @app.route("/api/admin/ctf/get", methods=['POST'])
@@ -199,17 +208,25 @@ def admin_page_user_update():
 def ctf_get_api():
     if check_login():
         abort(401)
-    token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest()
-    return os.popen(f"docker ps | grep {token}").read()
+    problemName, *_ = request.form.values()
+    token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest() + problemName
+    run = os.popen(f"docker ps | grep {token}").read()
+    if run == "":
+        return {"result":"none"}
+    return re.findall(r'\d+', run.split(":")[2])[0]
 
 @app.route('/api/ctf/run', methods=['POST'])
 def ctf_run_api():
     if check_login():
         abort(401)
+    problemName, *_ = request.form.values()
     token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest()
-    os.system(f"docker kill {token}")
-    run_docker(token)
-    return os.popen(f"docker ps | grep {token}").read()
+    os.system(f"docker kill $(docker ps -q -f name={token})")
+    token += problemName
+    run_docker(token, problemName)
+    run = os.popen(f"docker ps | grep {token}").read()
+    return re.findall(r'\d+', run.split(":")[2])[0]
+    
 
 @app.route('/api/ctf/stop/<token>', methods=['GET'])
 def ctf_stop_api(token):
