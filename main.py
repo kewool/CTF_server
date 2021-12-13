@@ -37,7 +37,7 @@ def login_page():
         db.execute("SELECT ctf_user_id FROM ctf_users WHERE ctf_user_id=? AND ctf_user_password=?", (userId, password))
         dbId = db.fetchone()
         if dbId == None:
-            return render_template("login/index.html", idCheck=True)
+            return {"result":"failed"}
         elif dbId[0] == userId:
             session["ctf_user_id"] = userId
         return redirect(url_for("main"))
@@ -236,6 +236,12 @@ def admin_page_user_update():
             score = list(db.fetchall())
             for i in score:
                 db.execute(f"UPDATE ctf_users SET ctf_user_score=ctf_user_score+? WHERE ctf_user_id IN {userList}", ((i[0] - 1) * 2, ))
+    return {"result":"successful"}
+
+@app.route("/api/admin/user/changepassword", methods=['POST'])
+def admin_page_user_changepassword():
+    userId, userPw, *_ = request.form.values()
+    db.execute("UPDATE ctf_users SET ctf_user_password=? WHERE ctf_user_id=?",(hashlib.sha256(userPw.encode()).hexdigest(), userId))
     return {"result":"successful"}
 
 @app.route("/api/ctf/get", methods=['POST'])
