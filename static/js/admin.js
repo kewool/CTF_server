@@ -45,7 +45,6 @@ function updateUserGet(url, id, name, csrfToken) {
         body: `userId=${id}`
     }).then((res) => res.json()).then((data)=>{
         document.getElementById("userId").value = id;
-        document.getElementById("userPw").value = "";
         document.getElementById("userName").value = name;
         document.getElementById("userEmail").value = data["ctf_user_email"];
         document.getElementById("userSchool").value = data["ctf_user_school"];

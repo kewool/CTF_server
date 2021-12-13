@@ -114,8 +114,10 @@ def flag_submit():
     correctFlag = db.fetchone()[0]
     if(flag == correctFlag):
         db.execute("UPDATE ctf_users SET ctf_user_solved=ctf_user_solved+1, ctf_user_try=ctf_user_try+1, ctf_user_score=ctf_user_score+(SELECT ctf_problem_score FROM ctf_problems WHERE ctf_problem_name=?), ctf_user_last_solved_date=? WHERE ctf_user_id=?", (problemName, time.time(), userId))
-        db.execute("INSERT INTO ctf_logs(ctf_user_name, ctf_problem_name, ctf_correct_answer, ctf_log_flag, ctf_log_date) VALUES (?, ?, ?, ?, ?)", (userId, problemName, "correct", flag, str(datetime.datetime.now())))
-        db.execute("INSERT INTO ctf_solved(ctf_user_id, ctf_problem_name, ctf_problem_solved_date) VALUES (?, ?, ?)", (userId, problemName, time.time()))
+        db.execute("INSERT INTO ctf_logs(ctf_user_name, ctf_problem_name, ctf_correct_answer, ctf_log_flag, ctf_log_date, ctf_log_user_ip) VALUES (?, ?, ?, ?, ?, ?)", (userId, problemName, "correct", flag, str(datetime.datetime.now()), request.remote_addr))
+        db.execute("INSERT INTO ctf_solved(ctf_user_id, ctf_problem_name, ctf_problem_solved_date, ctf_solved_user_ip) VALUES (?, ?, ?, ?)", (userId, problemName, time.time(), request.remote_addr))
+        if db.execute("SELECT ctf_user_visible FROM ctf_users WHERE ctf_user_id=?", (userId, )).fetchone()[0] == 0:
+            return {"result":"correct"}
         db.execute("UPDATE ctf_problems SET ctf_problem_solved=ctf_problem_solved+1 WHERE ctf_problem_name=?", (problemName, ))
         db.execute("UPDATE ctf_problems SET ctf_problem_score=ctf_problem_score-(ctf_problem_solved-1)*2 WHERE ctf_problem_name=? AND ctf_problem_score>70", (problemName, ))
         db.execute("SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name=?", (problemName, ))
@@ -126,7 +128,7 @@ def flag_submit():
         db.execute(f"UPDATE ctf_users SET ctf_user_score=ctf_user_score-? WHERE ctf_user_id IN {userList}", (score, ))
     else:
         db.execute("UPDATE ctf_users SET ctf_user_try=ctf_user_try+1 WHERE ctf_user_id=?", (userId, ))
-        db.execute("INSERT INTO ctf_logs(ctf_user_name, ctf_problem_name, ctf_correct_answer, ctf_log_flag, ctf_log_date) VALUES (?, ?, ?, ?, ?)", (userId, problemName, "incorrect", flag, str(datetime.datetime.now())))
+        db.execute("INSERT INTO ctf_logs(ctf_user_name, ctf_problem_name, ctf_correct_answer, ctf_log_flag, ctf_log_date, ctf_log_user_ip) VALUES (?, ?, ?, ?, ?, ?)", (userId, problemName, "incorrect", flag, str(datetime.datetime.now()), request.remote_addr))
         return {"result":"incorrect"}
     return {"result":"correct"}
 
@@ -193,16 +195,48 @@ def admin_page_ctf_delete():
 def admin_page_user_get():
     if check_admin():
         abort(404)
-    userId = request.form["userId"]
+    userId, *_ = request.form.values()
     db.execute("SELECT * FROM ctf_users WHERE ctf_user_id=?", (userId, ))
     user = db.fetchone()
     return {"ctf_user_email":user[3], "ctf_user_school":user[4], "ctf_user_score":user[5], "ctf_user_solved":user[6], "ctf_user_try":user[7], "ctf_user_visible":user[8], "ctf_user_register_date":user[9]}
 
-@app.route("/api/admin/user/update", methods=['POST'])
+@app.route("/api/admin/user/updateprofile", methods=['POST'])
 def admin_page_user_update():
     if check_admin():
         abort(404)
-    return
+    userId, userName, userEmail, userSchool, userVisible, *_ = request.form.values()
+    visible = 1 if userVisible == "visible" else 0
+    visible_before = db.execute("SELECT ctf_user_visible FROM ctf_users WHERE ctf_user_id=?", (userId, )).fetchone()[0]
+    try:
+        db.execute("UPDATE ctf_users SET ctf_user_name=?, ctf_user_email=?, ctf_user_school=?, ctf_user_visible=? WHERE ctf_user_id=?", (userName, userEmail, userSchool, visible, userId))
+    except:
+        return {"result":"failed"}
+    if visible != visible_before:
+        if visible:
+            problems = db.execute("SELECT ctf_problem_name FROM ctf_solved WHERE ctf_user_id=?", (userId, )).fetchall()
+            problemList = str([i[0] for i in problems]).replace("[", "(").replace("]", ")")
+            db.execute(f"UPDATE ctf_problems SET ctf_problem_solved=ctf_problem_solved+1 WHERE ctf_problem_name IN {problemList}")
+            db.execute(f"UPDATE ctf_problems SET ctf_problem_score=ctf_problem_score-(ctf_problem_solved-1)*2 WHERE ctf_problem_name IN {problemList} AND ctf_problem_score>70")
+            db.execute(f"SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name IN {problemList}")
+            users = db.fetchall()
+            userList = str([i[0] for i in users]).replace("[", "(").replace("]", ")")
+            db.execute(f"SELECT ctf_problem_solved FROM ctf_problems WHERE ctf_problem_name IN {problemList}")
+            score = list(db.fetchall())
+            for i in score:
+                db.execute(f"UPDATE ctf_users SET ctf_user_score=ctf_user_score-? WHERE ctf_user_id IN {userList}", ((i[0] - 1) * 2, ))
+        elif not visible:
+            problems = db.execute("SELECT ctf_problem_name FROM ctf_solved WHERE ctf_user_id=?", (userId, )).fetchall()
+            problemList = str([i[0] for i in problems]).replace("[", "(").replace("]", ")")
+            db.execute(f"UPDATE ctf_problems SET ctf_problem_solved=ctf_problem_solved-1 WHERE ctf_problem_name IN {problemList}")
+            db.execute(f"UPDATE ctf_problems SET ctf_problem_score=ctf_problem_score+(ctf_problem_solved)*2 WHERE ctf_problem_name IN {problemList} AND ctf_problem_score>70")
+            db.execute(f"SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name IN {problemList}")
+            users = db.fetchall()
+            userList = str([i[0] for i in users]).replace("[", "(").replace("]", ")")
+            db.execute(f"SELECT ctf_problem_solved FROM ctf_problems WHERE ctf_problem_name IN {problemList}")
+            score = list(db.fetchall())
+            for i in score:
+                db.execute(f"UPDATE ctf_users SET ctf_user_score=ctf_user_score+? WHERE ctf_user_id IN {userList}", ((i[0] - 1) * 2, ))
+    return {"result":"successful"}
 
 @app.route("/api/ctf/get", methods=['POST'])
 def ctf_get_api():
