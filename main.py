@@ -140,7 +140,8 @@ def admin_page():
     problem_list = db.execute("SELECT ctf_problem_name FROM ctf_problems").fetchall()
     solved_list = db.execute("SELECT * FROM ctf_solved").fetchall()
     log_list = db.execute("SELECT * FROM ctf_logs ORDER BY ctf_log_idx desc").fetchall()
-    return render_template("admin/index.html", user_list=user_list, problem_list=problem_list, solved_list=solved_list, log_list=log_list)
+    notice_list = db.execute("SELECT * FROM ctf_notices").fetchall()
+    return render_template("admin/index.html", user_list=user_list, problem_list=problem_list, solved_list=solved_list, log_list=log_list, notice_list=notice_list)
 
 @app.route("/api/admin/ctf/get", methods=['POST'])
 def admin_page_ctf_get():
@@ -237,6 +238,11 @@ def admin_page_user_update():
             for i in score:
                 db.execute(f"UPDATE ctf_users SET ctf_user_score=ctf_user_score+? WHERE ctf_user_id IN {userList}", ((i[0] - 1) * 2, ))
     return {"result":"successful"}
+
+@app.route("/api/admin/notice/get", methods=['POST'])
+def admin_page_notice_get():
+
+    return
 
 @app.route("/api/admin/user/changepassword", methods=['POST'])
 def admin_page_user_changepassword():

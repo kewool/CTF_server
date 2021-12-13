@@ -132,7 +132,8 @@ function addProblem(url, csrfToken, getURL, updateURL){
         div.className = "problemNameBox";
         div.setAttribute("onclick", `updateProblemGet("${getURL}", "${data["result"]}", "${csrfToken}", "${updateURL}")`);
         div.innerText = data["result"];
-        document.getElementsByClassName("problemNameBox")[0].before(div);
+        div.id = document.getElementById("problemName").value;
+        document.getElementById("problem").prepend(div);
         document.getElementById("problemSubmit").value = "update";
         document.getElementById("problemSubmit").setAttribute("onclick",`updateProblem("${updateURL}", "${csrfToken}")`);
     })

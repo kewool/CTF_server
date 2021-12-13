@@ -10,6 +10,7 @@
 <body>
     <button onclick="userList()">user</button>
     <button onclick="problemList()">ctf</button>
+    <button onclick="noticeList()">notice</button>
     <button onclick="solvedList()">solved</button>
     <button onclick="logList()">log</button>
     <div id="users">
@@ -59,6 +60,7 @@
             </div>
         </div>
     </div>
+    <div id="notice" style="display:none;"></div>
     <div id="solved" style="display:none">
         {%for solved in solved_list%}
         <p>{{solved}}</p>
