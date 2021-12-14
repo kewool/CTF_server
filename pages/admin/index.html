@@ -37,7 +37,7 @@
     </div>
     <div id="problem" style="display:none;">
         {%for problem in problem_list%}
-        <div class="problemNameBox" id="{{problem[0]}}" onclick="updateProblemGet(`{{url_for('admin_page_ctf_get')}}`, '{{problem[0]}}', '{{ csrf_token() }}', `{{url_for('admin_page_ctf_update')}}`)">{{problem[0]}}</div>
+        <div class="problemNameBox" onclick="updateProblemGet(`{{url_for('admin_page_ctf_get')}}`, '{{problem[0]}}', '{{ csrf_token() }}', `{{url_for('admin_page_ctf_update')}}`)">{{problem[0]}}</div>
         {%endfor%}
         <button id="addProblem" onclick="addProblemForm(`{{url_for('admin_page_ctf_add')}}`, '{{csrf_token()}}', `{{url_for('admin_page_ctf_get')}}`, `{{url_for('admin_page_ctf_update')}}`)">add</button>
         <div>
@@ -60,7 +60,11 @@
             </div>
         </div>
     </div>
-    <div id="notice" style="display:none;"></div>
+    <div id="notice" style="display:none;">
+        {%for notice in notice_list%}
+        <div class="noticeTitle" onclick=""></div>
+        {%endfor%}
+    </div>
     <div id="solved" style="display:none">
         {%for solved in solved_list%}
         <p>{{solved}}</p>

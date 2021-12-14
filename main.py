@@ -241,8 +241,8 @@ def admin_page_user_update():
 
 @app.route("/api/admin/notice/get", methods=['POST'])
 def admin_page_notice_get():
-
-    return
+    notice_list = db.execute("SELECT ctf_notice_title, ctf_notice_contents FROM ctf_notices ORDER BY ctf_notice_idx desc")
+    return render_template("notice/index.html", notice_list=notice_list)
 
 @app.route("/api/admin/user/changepassword", methods=['POST'])
 def admin_page_user_changepassword():
