@@ -248,7 +248,7 @@ def admin_page_notice_get():
 def admin_page_notice_add():
     notice_title, notice_contents, *_ = request.form.values()
     db.execute("INSERT INTO ctf_notices(ctf_notice_title, ctf_notice_contents) VALUES(?, ?)", (notice_title, notice_contents))
-    return
+    return {"result":"successful"}
 
 @app.route("/api/admin/user/changepassword", methods=['POST'])
 def admin_page_user_changepassword():
