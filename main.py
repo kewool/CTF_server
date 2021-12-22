@@ -250,6 +250,12 @@ def admin_page_notice_add():
     db.execute("INSERT INTO ctf_notices(ctf_notice_title, ctf_notice_contents) VALUES(?, ?)", (notice_title, notice_contents))
     return {"result":"successful"}
 
+@app.route("/api/admin/notice/delete", methods=['POST'])
+def admin_page_notice_delete():
+    notice_title, *_ = request.form.values()
+    db.execute("DELETE FROM ctf_notices WHERE ctf_notice_title=?", (notice_title, ))
+    return {"result":"successful"}
+
 @app.route("/api/admin/user/changepassword", methods=['POST'])
 def admin_page_user_changepassword():
     userId, userPw, *_ = request.form.values()
