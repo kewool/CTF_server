@@ -252,8 +252,14 @@ def admin_page_notice_add():
 
 @app.route("/api/admin/notice/delete", methods=['POST'])
 def admin_page_notice_delete():
-    notice_title, *_ = request.form.values()
-    db.execute("DELETE FROM ctf_notices WHERE ctf_notice_title=?", (notice_title, ))
+    notice_idx, notice_title, notice_contents, *_ = request.form.values()
+    db.execute("DELETE FROM ctf_notices SET ctf_notice_title=?, ctf_notice_contents=? WHERE notice_idx=?", (notice_title, notice_contents, notice_idx))
+    return {"result":"successful"}
+
+@app.route("/api/admin/notice/update", methods=['POST'])
+def admin_page_notice_delete():
+    notice_idx, *_ = request.form.values()
+    db.execute("UPDATE ctf_notices WHERE ctf_notice_idx=?", (notice_idx, ))
     return {"result":"successful"}
 
 @app.route("/api/admin/user/changepassword", methods=['POST'])
