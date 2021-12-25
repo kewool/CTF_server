@@ -241,7 +241,7 @@ def admin_page_user_update():
 
 @app.route("/api/admin/notice/get", methods=['POST'])
 def admin_page_notice_get():
-    notice_list = db.execute("SELECT ctf_notice_title, ctf_notice_contents FROM ctf_notices ORDER BY ctf_notice_idx desc")
+    notice_list = db.execute("SELECT * FROM ctf_notices ORDER BY ctf_notice_idx desc")
     return render_template("notice/index.html", notice_list=notice_list)
 
 @app.route("/api/admin/notice/add", methods=['POST'])
@@ -256,7 +256,7 @@ def admin_page_notice_update():
     db.execute("UPDATE ctf_notices SET ctf_notice_title=?, ctf_notice_contents=? WHERE notice_idx=?", (notice_title, notice_contents, notice_idx))
     return {"result":"successful"}
 
-@app.route("/api/admin/notice/update", methods=['POST'])
+@app.route("/api/admin/notice/delete", methods=['POST'])
 def admin_page_notice_delete():
     notice_idx, *_ = request.form.values()
     db.execute("DELETE ROM ctf_notices WHERE ctf_notice_idx=?", (notice_idx, ))
