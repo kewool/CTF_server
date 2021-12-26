@@ -52,7 +52,7 @@ function isClick() {
     this.className += "clicked"
 }
 
-function updateUserGet(url, id, name, csrfToken) {
+function getUser(url, id, name, csrfToken) {
     fetch(url, {
         method: 'POST',
         headers: {
@@ -75,7 +75,7 @@ function updateUserGet(url, id, name, csrfToken) {
     });
 }
 
-function updateProblemGet(url, name, csrfToken, formURL) {
+function getProblem(url, name, csrfToken, formURL) {
     fetch(url, {
         method: 'POST',
         headers: {
@@ -148,7 +148,7 @@ function addProblem(url, csrfToken, getURL, updateURL) {
     }).then((res) => res.json()).then((data) => {
         let div = document.createElement("div");
         div.className = "problemNameBox";
-        div.setAttribute("onclick", `updateProblemGet("${getURL}", "${data["result"]}", "${csrfToken}", "${updateURL}")`);
+        div.setAttribute("onclick", `getProblem("${getURL}", "${data["result"]}", "${csrfToken}", "${updateURL}")`);
         div.innerText = data["result"];
         div.id = $("problemName").value;
         $("problem").prepend(div);

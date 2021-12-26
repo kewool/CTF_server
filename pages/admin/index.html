@@ -15,7 +15,7 @@
     <button onclick="logList()">log</button>
     <div id="users">
         {%for user in user_list%}
-        <div class="userNameBox" onclick="updateUserGet(`{{url_for('admin_page_user_get')}}`, '{{user[0]}}', '{{user[1]}}', '{{csrf_token()}}')">{{user[0]}}({{user[1]}})</div>
+        <div class="userNameBox" onclick="getUser(`{{url_for('admin_page_user_get')}}`, '{{user[0]}}', '{{user[1]}}', '{{csrf_token()}}')">{{user[0]}}({{user[1]}})</div>
         {%endfor%}
         <div>
             <form id="userForm" action="{{url_for('admin_page_user_update')}}" method='POST' style="display:none;">
@@ -38,7 +38,7 @@
     </div>
     <div id="problem" style="display:none;">
         {%for problem in problem_list%}
-        <div class="problemNameBox" onclick="updateProblemGet(`{{url_for('admin_page_ctf_get')}}`, '{{problem[0]}}', '{{ csrf_token() }}', `{{url_for('admin_page_ctf_update')}}`)">{{problem[0]}}</div>
+        <div class="problemNameBox" onclick="getProblem(`{{url_for('admin_page_ctf_get')}}`, '{{problem[0]}}', '{{ csrf_token() }}', `{{url_for('admin_page_ctf_update')}}`)">{{problem[0]}}</div>
         {%endfor%}
         <button id="addProblem" onclick="addProblemForm(`{{url_for('admin_page_ctf_add')}}`, '{{csrf_token()}}', `{{url_for('admin_page_ctf_get')}}`, `{{url_for('admin_page_ctf_update')}}`)">add</button>
         <div>
@@ -63,7 +63,7 @@
     </div>
     <div id="notice" style="display:none;">
         {%for notice in notice_list%}
-        <div class="noticeTitle" onclick=""></div>
+        <div class="noticeTitle" id="{{notice[0]}}" onclick="updateNoticeGet()">{{notice[1]}}</div>
         {%endfor%}
     </div>
     <div id="solved" style="display:none">
