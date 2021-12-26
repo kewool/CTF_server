@@ -70,6 +70,7 @@ function updateUserGet(url, id, name, csrfToken) {
         $("userTry").innerText = data["ctf_user_try"];
         $("userVisible").checked = data["ctf_user_visible"] ? true : false;
         $("userRegisterDate").innerText = data["ctf_user_register_date"];
+        $("lastSolvedDate").innerText = data["ctf_user_last_solved_date"];
         $("userForm").style.display = "block";
     });
 }
