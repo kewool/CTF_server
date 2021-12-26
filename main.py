@@ -185,10 +185,7 @@ def admin_page_ctf_delete():
         db.execute("DELETE FROM ctf_problems WHERE ctf_problem_name=?", (problemName, ))
     except:
         return {"result":"error"}
-    db.execute("SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name=?", (problemName, ))
-    users = db.fetchall()
-    userList = str([i[0] for i in users]).replace("[", "(").replace("]", ")")
-    db.execute(f"UPDATE ctf_users SET ctf_user_score=ctf_user_score-?, ctf_user_solved=ctf_user_solved-1 WHERE ctf_user_id IN {userList}", (problemScore, ))
+    db.execute(f"UPDATE ctf_users SET ctf_user_score=ctf_user_score-?, ctf_user_solved=ctf_user_solved-1 WHERE ctf_user_id IN (SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name=?)", (problemScore, problemName))
     db.execute("DELETE FROM ctf_solved WHERE ctf_problem_name=?", (problemName, ))
     return {"result":"succesful"}
 
@@ -214,29 +211,19 @@ def admin_page_user_update():
         return {"result":"failed"}
     if visible != visible_before:
         if visible:
-            problems = db.execute("SELECT ctf_problem_name FROM ctf_solved WHERE ctf_user_id=?", (userId, )).fetchall()
-            problemList = str([i[0] for i in problems]).replace("[", "(").replace("]", ")")
-            db.execute(f"UPDATE ctf_problems SET ctf_problem_solved=ctf_problem_solved+1 WHERE ctf_problem_name IN {problemList}")
-            db.execute(f"UPDATE ctf_problems SET ctf_problem_score=ctf_problem_score-(ctf_problem_solved-1)*2 WHERE ctf_problem_name IN {problemList} AND ctf_problem_score>70")
-            db.execute(f"SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name IN {problemList}")
-            users = db.fetchall()
-            userList = str([i[0] for i in users]).replace("[", "(").replace("]", ")")
-            db.execute(f"SELECT ctf_problem_solved FROM ctf_problems WHERE ctf_problem_name IN {problemList}")
+            db.execute("UPDATE ctf_problems SET ctf_problem_solved=ctf_problem_solved+1 WHERE ctf_problem_name IN (SELECT ctf_problem_name FROM ctf_solved WHERE ctf_user_id=?)", (userId, ))
+            db.execute("UPDATE ctf_problems SET ctf_problem_score=ctf_problem_score-(ctf_problem_solved-1)*2 WHERE ctf_problem_name IN (SELECT ctf_problem_name FROM ctf_solved WHERE ctf_user_id=?) AND ctf_problem_score>70", (userId, ))
+            db.execute("SELECT ctf_problem_solved FROM ctf_problems WHERE ctf_problem_name IN (SELECT ctf_problem_name FROM ctf_solved WHERE ctf_user_id=?)", (userId, ))
             score = list(db.fetchall())
             for i in score:
-                db.execute(f"UPDATE ctf_users SET ctf_user_score=ctf_user_score-? WHERE ctf_user_id IN {userList}", ((i[0] - 1) * 2, ))
+                db.execute("UPDATE ctf_users SET ctf_user_score=ctf_user_score-? WHERE ctf_user_id IN (SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name IN (SELECT ctf_problem_name FROM ctf_solved WHERE ctf_user_id=?))", ((i[0] - 1) * 2, userId))
         elif not visible:
-            problems = db.execute("SELECT ctf_problem_name FROM ctf_solved WHERE ctf_user_id=?", (userId, )).fetchall()
-            problemList = str([i[0] for i in problems]).replace("[", "(").replace("]", ")")
-            db.execute(f"UPDATE ctf_problems SET ctf_problem_solved=ctf_problem_solved-1 WHERE ctf_problem_name IN {problemList}")
-            db.execute(f"UPDATE ctf_problems SET ctf_problem_score=ctf_problem_score+(ctf_problem_solved)*2 WHERE ctf_problem_name IN {problemList} AND ctf_problem_score>70")
-            db.execute(f"SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name IN {problemList}")
-            users = db.fetchall()
-            userList = str([i[0] for i in users]).replace("[", "(").replace("]", ")")
-            db.execute(f"SELECT ctf_problem_solved FROM ctf_problems WHERE ctf_problem_name IN {problemList}")
+            db.execute("UPDATE ctf_problems SET ctf_problem_solved=ctf_problem_solved-1 WHERE ctf_problem_name IN (SELECT ctf_problem_name FROM ctf_solved WHERE ctf_user_id=?)", (userId, ))
+            db.execute("UPDATE ctf_problems SET ctf_problem_score=ctf_problem_score+(ctf_problem_solved)*2 WHERE ctf_problem_name IN (SELECT ctf_problem_name FROM ctf_solved WHERE ctf_user_id=?)", (userId, ))
+            db.execute("SELECT ctf_problem_solved FROM ctf_problems WHERE ctf_problem_name IN (SELECT ctf_problem_name FROM ctf_solved WHERE ctf_user_id=?)", (userId, ))
             score = list(db.fetchall())
             for i in score:
-                db.execute(f"UPDATE ctf_users SET ctf_user_score=ctf_user_score+? WHERE ctf_user_id IN {userList}", ((i[0] - 1) * 2, ))
+                db.execute("UPDATE ctf_users SET ctf_user_score=ctf_user_score+? WHERE ctf_user_id IN (SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name IN (SELECT ctf_problem_name FROM ctf_solved WHERE ctf_user_id=?))", (i[0] * 2, userId))
     return {"result":"successful"}
 
 @app.route("/api/admin/notice/get", methods=['POST'])

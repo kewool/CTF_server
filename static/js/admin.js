@@ -1,10 +1,14 @@
-let problem = document.getElementById("problem");
-let users = document.getElementById("users");
-let notice = document.getElementById("notice");
-let solved = document.getElementById("solved");
-let log = document.getElementById("log");
+function $(name) {
+    return document.getElementById(name);
+}
 
-function problemList(){
+let problem = $("problem");
+let users = $("users");
+let notice = $("notice");
+let solved = $("solved");
+let log = $("log");
+
+function problemList() {
     problem.style.display = "block";
     users.style.display = "none";
     notice.style.display = "none";
@@ -12,7 +16,7 @@ function problemList(){
     log.style.display = "none";
 }
 
-function userList(){
+function userList() {
     problem.style.display = "none";
     users.style.display = "block";
     notice.style.display = "none";
@@ -20,7 +24,7 @@ function userList(){
     log.style.display = "none";
 }
 
-function noticeList(){
+function noticeList() {
     problem.style.display = "none";
     users.style.display = "none";
     notice.style.display = "block";
@@ -28,7 +32,7 @@ function noticeList(){
     log.style.display = "none";
 }
 
-function solvedList(){
+function solvedList() {
     problem.style.display = "none";
     users.style.display = "none";
     notice.style.display = "none";
@@ -36,7 +40,7 @@ function solvedList(){
     log.style.display = "none";
 }
 
-function logList(){
+function logList() {
     problem.style.display = "none";
     users.style.display = "none";
     notice.style.display = "none";
@@ -44,7 +48,7 @@ function logList(){
     log.style.display = "block";
 }
 
-function isClick(){
+function isClick() {
     this.className += "clicked"
 }
 
@@ -56,17 +60,17 @@ function updateUserGet(url, id, name, csrfToken) {
             "X-CSRFToken": csrfToken
         },
         body: `userId=${id}`
-    }).then((res) => res.json()).then((data)=>{
-        document.getElementById("userId").value = id;
-        document.getElementById("userName").value = name;
-        document.getElementById("userEmail").value = data["ctf_user_email"];
-        document.getElementById("userSchool").value = data["ctf_user_school"];
-        document.getElementById("userScore").innerText = data["ctf_user_score"];
-        document.getElementById("userSolved").innerText = data["ctf_user_solved"];
-        document.getElementById("userTry").innerText = data["ctf_user_try"];
-        document.getElementById("userVisible").checked = data["ctf_user_visible"]? true:false;
-        document.getElementById("userRegisterDate").innerText = data["ctf_user_register_date"];
-        document.getElementById("userForm").style.display = "block";
+    }).then((res) => res.json()).then((data) => {
+        $("userId").value = id;
+        $("userName").value = name;
+        $("userEmail").value = data["ctf_user_email"];
+        $("userSchool").value = data["ctf_user_school"];
+        $("userScore").innerText = data["ctf_user_score"];
+        $("userSolved").innerText = data["ctf_user_solved"];
+        $("userTry").innerText = data["ctf_user_try"];
+        $("userVisible").checked = data["ctf_user_visible"] ? true : false;
+        $("userRegisterDate").innerText = data["ctf_user_register_date"];
+        $("userForm").style.display = "block";
     });
 }
 
@@ -78,92 +82,92 @@ function updateProblemGet(url, name, csrfToken, formURL) {
             "X-CSRFToken": csrfToken
         },
         body: `problemName=${name}`
-    }).then((res) => res.json()).then((data)=>{
-        document.getElementById("result").innerText = "";
-        document.getElementById("problemName").readOnly = true;
-        document.getElementById("problemName").value = name;
-        document.getElementById("problemFlag").value = data["ctf_problem_flag"];
+    }).then((res) => res.json()).then((data) => {
+        $("result").innerText = "";
+        $("problemName").readOnly = true;
+        $("problemName").value = name;
+        $("problemFlag").value = data["ctf_problem_flag"];
         let problemType = [];
-        for(var i of document.getElementsByName("problemType")) problemType.push(i.value);
+        for (var i of document.getElementsByName("problemType")) problemType.push(i.value);
         problemType.map((item) => {
-            if(data["ctf_problem_type"] === item) document.getElementById(item).checked = true;
+            if (data["ctf_problem_type"] === item) $(item).checked = true;
         })
-        document.getElementById("problemContents").value = data["ctf_problem_contents"];
-        document.getElementById("problemFile").value = data["ctf_problem_file"];
-        document.getElementById("problemVisible").checked = data["ctf_problem_visible"]? true:false;
-        document.getElementById("problemSubmit").value = "update";
-        document.getElementById("problemSubmit").setAttribute("onclick",`updateProblem("${formURL}", "${csrfToken}")`);
-        document.getElementById("problemDelete").style.display = "inline-block";
-        document.getElementById("problemForm").style.display = "block";
+        $("problemContents").value = data["ctf_problem_contents"];
+        $("problemFile").value = data["ctf_problem_file"];
+        $("problemVisible").checked = data["ctf_problem_visible"] ? true : false;
+        $("problemSubmit").value = "update";
+        $("problemSubmit").setAttribute("onclick", `updateProblem("${formURL}", "${csrfToken}")`);
+        $("problemDelete").style.display = "inline-block";
+        $("problemForm").style.display = "block";
     });
 }
 
-function updateProblem(url, csrfToken){
+function updateProblem(url, csrfToken) {
     let type, visible;
-    for(var i of document.getElementsByName("problemType")) if(i.checked === true) type = i.value;
-    if(document.getElementById("problemVisible").checked === true) visible = "visible";
-    fetch(url,{
+    for (var i of document.getElementsByName("problemType")) if (i.checked === true) type = i.value;
+    if ($("problemVisible").checked === true) visible = "visible";
+    fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             "X-CSRFToken": csrfToken
         },
-        body:`problemName=${document.getElementById("problemName").value}&problemFlag=${document.getElementById("problemFlag").value}&problemType=${type}&problemContents=${document.getElementById("problemContents").value}&problemFile=${document.getElementById("problemFile").value}&problemVisible=${visible}`
-    }).then((res) => res.json()).then((data)=>{
-        document.getElementById("result").innerText = data["result"];
+        body: `problemName=${$("problemName").value}&problemFlag=${$("problemFlag").value}&problemType=${type}&problemContents=${$("problemContents").value}&problemFile=${$("problemFile").value}&problemVisible=${visible}`
+    }).then((res) => res.json()).then((data) => {
+        $("result").innerText = data["result"];
     })
 }
 
-function addProblemForm(formURL, csrfToken, getURL, updateURL){
-    document.getElementById("result").innerText = "";
-    document.getElementById("problemName").readOnly = false;
-    document.getElementById("problemName").value = "";
-    document.getElementById("problemFlag").value = "";
+function addProblemForm(formURL, csrfToken, getURL, updateURL) {
+    $("result").innerText = "";
+    $("problemName").readOnly = false;
+    $("problemName").value = "";
+    $("problemFlag").value = "";
     for (var i of document.getElementsByName("problemType")) i.checked = false;
-    document.getElementById("problemContents").value = "";
-    document.getElementById("problemFile").value = "";
-    document.getElementById("problemVisible").checked = true;
-    document.getElementById("problemSubmit").setAttribute("onclick",`addProblem("${formURL}", "${csrfToken}", "${getURL}", "${updateURL}")`);
-    document.getElementById("problemSubmit").value = "add";
-    document.getElementById("problemDelete").style.display = "none";
-    document.getElementById("problemForm").style.display = "block";
+    $("problemContents").value = "";
+    $("problemFile").value = "";
+    $("problemVisible").checked = true;
+    $("problemSubmit").setAttribute("onclick", `addProblem("${formURL}", "${csrfToken}", "${getURL}", "${updateURL}")`);
+    $("problemSubmit").value = "add";
+    $("problemDelete").style.display = "none";
+    $("problemForm").style.display = "block";
 }
 
-function addProblem(url, csrfToken, getURL, updateURL){
+function addProblem(url, csrfToken, getURL, updateURL) {
     let type, visible;
-    for(var i of document.getElementsByName("problemType")) if(i.checked === true) type = i.value;
-    if(document.getElementById("problemVisible").checked === true) visible = "visible";
-    fetch(url,{
+    for (var i of document.getElementsByName("problemType")) if (i.checked === true) type = i.value;
+    if ($("problemVisible").checked === true) visible = "visible";
+    fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             "X-CSRFToken": csrfToken
         },
-        body:`problemName=${document.getElementById("problemName").value}&problemFlag=${document.getElementById("problemFlag").value}&problemType=${type}&problemContents=${document.getElementById("problemContents").value}&problemFile=${document.getElementById("problemFile").value}&problemVisible=${visible}`
-    }).then((res) => res.json()).then((data)=>{
+        body: `problemName=${$("problemName").value}&problemFlag=${$("problemFlag").value}&problemType=${type}&problemContents=${$("problemContents").value}&problemFile=${$("problemFile").value}&problemVisible=${visible}`
+    }).then((res) => res.json()).then((data) => {
         let div = document.createElement("div");
         div.className = "problemNameBox";
         div.setAttribute("onclick", `updateProblemGet("${getURL}", "${data["result"]}", "${csrfToken}", "${updateURL}")`);
         div.innerText = data["result"];
-        div.id = document.getElementById("problemName").value;
-        document.getElementById("problem").prepend(div);
-        document.getElementById("problemSubmit").value = "update";
-        document.getElementById("problemSubmit").setAttribute("onclick",`updateProblem("${updateURL}", "${csrfToken}")`);
+        div.id = $("problemName").value;
+        $("problem").prepend(div);
+        $("problemSubmit").value = "update";
+        $("problemSubmit").setAttribute("onclick", `updateProblem("${updateURL}", "${csrfToken}")`);
     })
 }
 
-function deleteProblem(url, csrfToken){
-    let problemName = document.getElementById("problemName").value;
-    fetch(url,{
+function deleteProblem(url, csrfToken) {
+    let problemName = $("problemName").value;
+    fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             "X-CSRFToken": csrfToken
         },
-        body:`problemName=${problemName}`
-    }).then((res) => res.json()).then((data)=>{
-        document.getElementById(problemName).remove();
-        document.getElementById("problemForm").style.display = "none";
-        document.getElementById("result").innerText = data["result"];
+        body: `problemName=${problemName}`
+    }).then((res) => res.json()).then((data) => {
+        $(problemName).remove();
+        $("problemForm").style.display = "none";
+        $("result").innerText = data["result"];
     })
 }
