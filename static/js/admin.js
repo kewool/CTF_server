@@ -172,5 +172,3 @@ function deleteProblem(url, csrfToken) {
         $("result").innerText = data["result"];
     })
 }
-
-function getNotice(url, csrfToken)
