@@ -16,11 +16,15 @@ def run_docker(token, problemName):
         run_docker()
 
 def check_admin():
-    
-    return session.get("ctf_user_id") != "admin"
+    userId = session.get("ctf_user_id")
+    if not userId:
+        abort(404)
+    if not db.execute("SELECT ctf_user_admin FROM ctf_users WHERE ctf_user_id=?", (userId, )).fetchone()[0]:
+        abort(404)
 
 def check_login():
-    return session.get("ctf_user_id", None) == None
+    if not session.get("ctf_user_id", None):
+        abort(401)
 
 @app.route("/", methods=['GET'])
 def main():
@@ -70,8 +74,7 @@ def user_list_page():
 
 @app.route("/profile", methods=['GET', 'POST'])
 def user_profile_page():
-    if check_login():
-        abort(401)
+    check_login()
     if request.method == 'GET':
         user_info = db.execute("SELECT ctf_user_id, ctf_user_name, ctf_user_email, ctf_user_school FROM ctf_users WHERE ctf_user_id=?", (session.get("ctf_user_id"), )).fetchone()
         return render_template("profile/index.html", user_info=user_info)
@@ -93,20 +96,17 @@ def user_scoreboard_page():
 
 @app.route("/ctf", methods=['GET','POST'])
 def ctf_page():
+    check_login()
     if request.method == 'GET':
-        if check_login():
-            abort(401)
-        db.execute("SELECT ctf_problem_name, ctf_problem_score FROM ctf_problems")
-        problemList = db.fetchall()
-        return render_template("ctf/index.html", problemList=problemList)
+        problemList = db.execute("SELECT ctf_problem_name, ctf_problem_type, ctf_problem_score FROM ctf_problems WHERE ctf_problem_visible=1 ORDER BY ctf_problem_score asc").fetchall()
+        return {"contents":problemList}
     if request.method == 'POST':
-        
-        return
+        problemContents = db.execute("SELECT ctf_problem_contents, ctf_problem_file FROM ctf_problems WHERE ctf_problem_visible=1").fetchone()
+        return {"contents":problemContents}
 
 @app.route("/api/flag/submit", methods=['POST'])
 def flag_submit():
-    if check_login():
-        abort(401)
+    check_login()
     userId = session.get("ctf_user_id")
     problemName, flag, *_ = request.form.values()
     if db.execute("SELECT * FROM ctf_solved WHERE ctf_user_id=? AND ctf_problem_name=?", (userId, problemName)).fetchone():
@@ -134,8 +134,7 @@ def flag_submit():
 
 @app.route("/admin", methods=['GET'])
 def admin_page():
-    if check_admin():
-        abort(404)
+    check_admin()
     user_list = db.execute("SELECT ctf_user_id, ctf_user_name FROM ctf_users").fetchall()
     problem_list = db.execute("SELECT ctf_problem_name FROM ctf_problems").fetchall()
     solved_list = db.execute("SELECT * FROM ctf_solved ORDER BY ctf_solved_idx desc").fetchall()
@@ -145,8 +144,7 @@ def admin_page():
 
 @app.route("/api/admin/ctf/get", methods=['POST'])
 def admin_page_ctf_get():
-    if check_admin():
-        abort(404)
+    check_admin()
     problemName = request.form["problemName"]
     db.execute("SELECT * FROM ctf_problems WHERE ctf_problem_name=?", (problemName,))
     problem = db.fetchone()
@@ -154,8 +152,7 @@ def admin_page_ctf_get():
 
 @app.route("/api/admin/ctf/add", methods=['POST'])
 def admin_page_ctf_add():
-    if check_admin():
-        abort(404)
+    check_admin()
     problemName, problemFlag, problemType, problemContents, problemFile, problemVisible, *_ = request.form.values()
     visible = 1 if problemVisible == "visible" else 0
     try:
@@ -166,8 +163,7 @@ def admin_page_ctf_add():
 
 @app.route("/api/admin/ctf/update", methods=['POST'])
 def admin_page_ctf_update():
-    if check_admin():
-        abort(404)
+    check_admin()
     problemName, problemFlag, problemType, problemContents, problemFile, problemVisible, *_ = request.form.values()
     visible = 1 if problemVisible == "visible" else 0
     visible_before = db.execute("SELECT ctf_problem_visible FROM ctf_problems WHERE ctf_problem_name=?", (problemName, )).fetchone()[0]
@@ -183,6 +179,7 @@ def admin_page_ctf_update():
 
 @app.route("/api/admin/ctf/delete", methods=['POST'])
 def admin_page_ctf_delete():
+    check_admin()
     problemName, *_ = request.form.values()
     if db.execute("SELECT ctf_problem_visible FROM ctf_problems WHERE ctf_problem_name=?", (problemName, )).fetchone()[0]:
         db.execute("UPDATE ctf_users SET ctf_user_score=ctf_user_score-(SELECT ctf_problem_score FROM ctf_problems WHERE ctf_problem_name=?), ctf_user_solved=ctf_user_solved-1 WHERE ctf_user_id IN (SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name=?)", (problemName, problemName))
@@ -194,8 +191,7 @@ def admin_page_ctf_delete():
 
 @app.route("/api/admin/user/get", methods=['POST'])
 def admin_page_user_get():
-    if check_admin():
-        abort(404)
+    check_admin()
     userId, *_ = request.form.values()
     db.execute("SELECT * FROM ctf_users WHERE ctf_user_id=?", (userId, ))
     user = db.fetchone()
@@ -203,8 +199,7 @@ def admin_page_user_get():
 
 @app.route("/api/admin/user/update/profile", methods=['POST'])
 def admin_page_user_update_profile():
-    if check_admin():
-        abort(404)
+    check_admin()
     userId, userName, userEmail, userSchool, userVisible, *_ = request.form.values()
     visible = 1 if userVisible == "visible" else 0
     visible_before = db.execute("SELECT ctf_user_visible FROM ctf_users WHERE ctf_user_id=?", (userId, )).fetchone()[0]
@@ -231,12 +226,14 @@ def admin_page_user_update_profile():
 
 @app.route("/api/admin/notice/get", methods=['POST'])
 def admin_page_notice_get():
+    check_admin()
     notice_idx, *_ = request.form.values()
     contents = db.execute("SELECT ctf_notice_contents FROM ctf_notices WHERE ctf_notice_idx=?", (notice_idx, )).fetchone()[0]
     return {"contents": contents}
 
 @app.route("/api/admin/notice/add", methods=['POST'])
 def admin_page_notice_add():
+    check_admin()
     notice_title, notice_contents, *_ = request.form.values()
     db.execute("INSERT INTO ctf_notices(ctf_notice_title, ctf_notice_contents) VALUES(?, ?)", (notice_title, notice_contents))
     notice_idx = db.execute("SELECT ctf_notice_idx FROM ctf_notices WHERE ctf_notice_title=?", (notice_title, )).fetchone()[0]
@@ -244,26 +241,28 @@ def admin_page_notice_add():
 
 @app.route("/api/admin/notice/update", methods=['POST'])
 def admin_page_notice_update():
+    check_admin()
     notice_idx, notice_title, notice_contents, *_ = request.form.values()
     db.execute("UPDATE ctf_notices SET ctf_notice_title=?, ctf_notice_contents=? WHERE ctf_notice_idx=?", (notice_title, notice_contents, notice_idx))
     return {"result":"successful"}
 
 @app.route("/api/admin/notice/delete", methods=['POST'])
 def admin_page_notice_delete():
+    check_admin()
     notice_idx, *_ = request.form.values()
     db.execute("DELETE FROM ctf_notices WHERE ctf_notice_idx=?", (notice_idx, ))
     return {"result":"successful"}
 
 @app.route("/api/admin/user/changepassword", methods=['POST'])
 def admin_page_user_changepassword():
+    check_admin()
     userId, userPw, *_ = request.form.values()
     db.execute("UPDATE ctf_users SET ctf_user_password=? WHERE ctf_user_id=?",(hashlib.sha256(userPw.encode()).hexdigest(), userId))
     return {"result":"successful"}
 
-@app.route("/api/ctf/get", methods=['POST'])
+@app.route("/api/ctf/docker/get", methods=['POST'])
 def ctf_get_api():
-    if check_login():
-        abort(401)
+    check_login()
     problemName, *_ = request.form.values()
     token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest() + problemName
     run = os.popen(f"docker ps | grep {token}").read()
@@ -271,10 +270,9 @@ def ctf_get_api():
         return {"result":"none"}
     return re.findall(r'\d+', run.split(":")[2])[0]
 
-@app.route('/api/ctf/run', methods=['POST'])
+@app.route('/api/ctf/docker/run', methods=['POST'])
 def ctf_run_api():
-    if check_login():
-        abort(401)
+    check_login()
     problemName, *_ = request.form.values()
     token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest()
     os.system(f"docker kill $(docker ps -q -f name={token})")
@@ -284,7 +282,7 @@ def ctf_run_api():
     return re.findall(r'\d+', run.split(":")[2])[0]
     
 
-@app.route('/api/ctf/stop/<token>', methods=['GET'])
+@app.route('/api/ctf/docker/stop/<token>', methods=['GET'])
 def ctf_stop_api(token):
     try:
         os.system(f"docker kill {token}")
@@ -298,4 +296,4 @@ def handle_csrf_error(e):
 
 if __name__ == '__main__':
     app.config["SECRET_KEY"] = SECRET_KEY
-    app.run(port=5324, debug=True)
+    app.run(port=5324)

@@ -6,5 +6,5 @@ TOKEN_VAL=`printenv TOKEN`
 
 if [ $NET = '']
 then
-    curl "https://ctf.kewool.net/api/ctf/stop/${TOKEN_VAL}"
+    curl "https://ctf.kewool.net/api/ctf/docker/stop/${TOKEN_VAL}"
 fi
