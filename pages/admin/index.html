@@ -32,13 +32,14 @@
                 <p id="userRegisterDate"></p>
                 <p id="lastSolvedDate"></p>
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="submit" id="userSubmit">
+                <input type="button" id="userSubmit" value="update">
+                <p id="userResult"></p>
             </form>
         </div>
     </div>
     <div id="problem" style="display:none;">
         {%for problem in problem_list%}
-        <div class="problemNameBox" onclick="getProblem(`{{url_for('admin_page_ctf_get')}}`, '{{problem[0]}}', '{{ csrf_token() }}', `{{url_for('admin_page_ctf_update')}}`)">{{problem[0]}}</div>
+        <div id="{{problem[0]}}" class="problemNameBox" onclick="getProblem(`{{url_for('admin_page_ctf_get')}}`, '{{problem[0]}}', '{{ csrf_token() }}', `{{url_for('admin_page_ctf_update')}}`)">{{problem[0]}}</div>
         {%endfor%}
         <button id="addProblem" onclick="addProblemForm(`{{url_for('admin_page_ctf_add')}}`, '{{csrf_token()}}', `{{url_for('admin_page_ctf_get')}}`, `{{url_for('admin_page_ctf_update')}}`)">add</button>
         <div>
@@ -55,16 +56,27 @@
                 <input type="text" name="problemFile" id="problemFile" placeholder="File URL"><br>
                 <input type="checkbox" name="problemVisible" id="problemVisible" value="visible">
                 <label for="problemVisible">Visible</label><br>
-                <input type="submit" id="problemSubmit">
+                <input type="button" id="problemSubmit">
                 <input type="button" id="problemDelete" value="delete" onclick="deleteProblem(`{{url_for('admin_page_ctf_delete')}}`, '{{csrf_token()}}')">
-                <p id="result"></p>
+                <p id="problemResult"></p>
             </div>
         </div>
     </div>
     <div id="notice" style="display:none;">
         {%for notice in notice_list%}
-        <div class="noticeTitle" id="{{notice[0]}}" onclick="updateNoticeGet()">{{notice[1]}}</div>
+        <div class="noticeTitle" id="{{notice[0]}}" onclick="getNotice(`{{url_for('admin_page_notice_get')}}`, '{{notice[0]}}', '{{notice[1]}}', '{{csrf_token()}}', `{{url_for('admin_page_notice_update')}}`)">{{notice[1]}}</div>
         {%endfor%}
+        <button id="addNotice" onclick="addNoticeForm(`{{url_for('admin_page_notice_add')}}`, '{{csrf_token()}}', `{{url_for('admin_page_notice_get')}}`, `{{url_for('admin_page_notice_update')}}`)">add</button>
+        <div>
+            <div id="noticeForm" style="display:none">
+                <p id="noticeIdx"></p>
+                <input type="text" name="noticeTitle" id="noticeTitle" placeholder="Notice Title"><br>
+                <textarea name="noticeContents" id="noticeContents" placeholder="Notice Contents"></textarea><br>
+                <input type="button" id="noticeSubmit">
+                <input type="button" id="noticeDelete" value="delete" onclick="deleteNotice(`{{url_for('admin_page_notice_delete')}}`, docId('noticeIdx').innerText,'{{csrf_token()}}')">
+                <p id="noticeResult"></p>
+            </div>
+        </div>
     </div>
     <div id="solved" style="display:none">
         {%for solved in solved_list%}

@@ -3,7 +3,6 @@ from flask_wtf.csrf import CSRFProtect, CSRFError
 import os
 import random as rd
 import datetime
-import time
 import re
 from db import *
 app = Flask(__name__, template_folder="pages/")
@@ -17,6 +16,7 @@ def run_docker(token, problemName):
         run_docker()
 
 def check_admin():
+    
     return session.get("ctf_user_id") != "admin"
 
 def check_login():
@@ -33,7 +33,7 @@ def login_page():
     if request.method == 'GET':
         return render_template("login/index.html")
     elif request.method == 'POST':
-        userId, userPw, _ = request.form.values()
+        userId, userPw, *_ = request.form.values()
         password = hashlib.sha256(userPw.encode()).hexdigest()
         db.execute("SELECT ctf_user_id FROM ctf_users WHERE ctf_user_id=? AND ctf_user_password=?", (userId, password))
         dbId = db.fetchone()
@@ -53,18 +53,18 @@ def register_page():
     if request.method == 'GET':
         return render_template("register/index.html")
     elif request.method == 'POST':
-        userId, userPw, userName, userEmail, userSchool, _ = request.form.values()
+        userId, userPw, userName, userEmail, userSchool, *_ = request.form.values()
         db.execute("SELECT * from ctf_users WHERE ctf_user_id=?", (userId, ))
         if db.fetchone() == None:
             password = hashlib.sha256(userPw.encode()).hexdigest()
-            db.execute("INSERT INTO ctf_users(ctf_user_id, ctf_user_password, ctf_user_name, ctf_user_email, ctf_user_school, ctf_user_score, ctf_user_solved, ctf_user_try, ctf_user_visible, ctf_user_register_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (userId, password, userName, userEmail, userSchool, 0, 0, 0, 1, time.time()))
+            db.execute("INSERT INTO ctf_users(ctf_user_id, ctf_user_password, ctf_user_name, ctf_user_email, ctf_user_school, ctf_user_score, ctf_user_solved, ctf_user_try, ctf_user_visible) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (userId, password, userName, userEmail, userSchool, 0, 0, 0, 1))
         else:
             return render_template("register/index.html", idCheck=True, id=userId, name=userName, email=userEmail, school=userSchool)
         return redirect(url_for('main'))
 
 @app.route("/users", methods=['GET'])
 def user_list_page():
-    db.execute("SELECT ctf_user_name FROM ctf_users WHERE ctf_user_visible=1 ORDER BY ctf_user_register_date asc")
+    db.execute("SELECT ctf_user_name FROM ctf_users WHERE ctf_user_visible=1")
     user_list = db.fetchall()
     return render_template("user_list/index.html", user_list=user_list)
 
@@ -87,7 +87,7 @@ def user_profile_page():
 
 @app.route("/scoreboard", methods=['GET'])
 def user_scoreboard_page():
-    db.execute("SELECT ctf_user_name, ctf_user_score FROM ctf_users ORDER BY ctf_user_score desc, ctf_user_last_solved_date asc")
+    db.execute("SELECT ctf_user_name, ctf_user_score FROM ctf_users WHERE ctf_user_visible=1 ORDER BY ctf_user_score desc, ctf_user_last_solved_date asc")
     user_list = db.fetchall()
     return render_template("scoreboard/index.html", user_list=user_list)
 
@@ -114,10 +114,10 @@ def flag_submit():
     db.execute("SELECT ctf_problem_flag FROM ctf_problems WHERE ctf_problem_name=?", (problemName, ))
     correctFlag = db.fetchone()[0]
     if(flag == correctFlag):
-        db.execute("UPDATE ctf_users SET ctf_user_solved=ctf_user_solved+1, ctf_user_try=ctf_user_try+1, ctf_user_score=ctf_user_score+(SELECT ctf_problem_score FROM ctf_problems WHERE ctf_problem_name=?), ctf_user_last_solved_date=? WHERE ctf_user_id=?", (problemName, time.time(), userId))
+        db.execute("UPDATE ctf_users SET ctf_user_solved=ctf_user_solved+1, ctf_user_try=ctf_user_try+1, ctf_user_score=ctf_user_score+(SELECT ctf_problem_score FROM ctf_problems WHERE ctf_problem_name=?), ctf_user_last_solved_date=? WHERE ctf_user_id=?", (problemName, str(datetime.datetime.now()), userId))
         db.execute("INSERT INTO ctf_logs(ctf_user_id, ctf_problem_name, ctf_correct_answer, ctf_log_flag, ctf_log_date, ctf_log_user_ip) VALUES (?, ?, ?, ?, ?, ?)", (userId, problemName, "correct", flag, str(datetime.datetime.now()), request.remote_addr))
-        db.execute("INSERT INTO ctf_tried(ctf_user_id, ctf_problem_name, ctf_problem_tried_date, ctf_tried_user_ip) VALUES (?, ?, ?, ?)", (userId, problemName, time.time(), request.remote_addr))
-        db.execute("INSERT INTO ctf_solved(ctf_user_id, ctf_problem_name, ctf_problem_solved_date, ctf_solved_user_ip) VALUES (?, ?, ?, ?)", (userId, problemName, time.time(), request.remote_addr))
+        db.execute("INSERT INTO ctf_tried(ctf_user_id, ctf_problem_name, ctf_problem_tried_date, ctf_tried_user_ip) VALUES (?, ?, ?, ?)", (userId, problemName, str(datetime.datetime.now()), request.remote_addr))
+        db.execute("INSERT INTO ctf_solved(ctf_user_id, ctf_problem_name, ctf_problem_solved_date, ctf_solved_user_ip) VALUES (?, ?, ?, ?)", (userId, problemName, str(datetime.datetime.now()), request.remote_addr))
         if not db.execute("SELECT ctf_user_visible FROM ctf_users WHERE ctf_user_id=?", (userId, )).fetchone()[0]:
             return {"result":"correct"}
         db.execute("UPDATE ctf_problems SET ctf_problem_solved=ctf_problem_solved+1 WHERE ctf_problem_name=?", (problemName, ))
@@ -128,7 +128,7 @@ def flag_submit():
     else:
         db.execute("UPDATE ctf_users SET ctf_user_try=ctf_user_try+1 WHERE ctf_user_id=?", (userId, ))
         db.execute("INSERT INTO ctf_logs(ctf_user_id, ctf_problem_name, ctf_correct_answer, ctf_log_flag, ctf_log_date, ctf_log_user_ip) VALUES (?, ?, ?, ?, ?, ?)", (userId, problemName, "incorrect", flag, str(datetime.datetime.now()), request.remote_addr))
-        db.execute("INSERT INTO ctf_tried(ctf_user_id, ctf_problem_name, ctf_problem_tried_date, ctf_tried_user_ip) VALUES (?, ?, ?, ?)", (userId, problemName, time.time(), request.remote_addr))
+        db.execute("INSERT INTO ctf_tried(ctf_user_id, ctf_problem_name, ctf_problem_tried_date, ctf_tried_user_ip) VALUES (?, ?, ?, ?)", (userId, problemName, str(datetime.datetime.now()), request.remote_addr))
         return {"result":"incorrect"}
     return {"result":"correct"}
 
@@ -138,9 +138,9 @@ def admin_page():
         abort(404)
     user_list = db.execute("SELECT ctf_user_id, ctf_user_name FROM ctf_users").fetchall()
     problem_list = db.execute("SELECT ctf_problem_name FROM ctf_problems").fetchall()
-    solved_list = db.execute("SELECT * FROM ctf_solved").fetchall()
+    solved_list = db.execute("SELECT * FROM ctf_solved ORDER BY ctf_solved_idx desc").fetchall()
     log_list = db.execute("SELECT * FROM ctf_logs ORDER BY ctf_log_idx desc").fetchall()
-    notice_list = db.execute("SELECT * FROM ctf_notices").fetchall()
+    notice_list = sorted(db.execute("SELECT ctf_notice_idx, ctf_notice_title FROM ctf_notices").fetchall(), reverse=True)
     return render_template("admin/index.html", user_list=user_list, problem_list=problem_list, solved_list=solved_list, log_list=log_list, notice_list=notice_list)
 
 @app.route("/api/admin/ctf/get", methods=['POST'])
@@ -162,7 +162,7 @@ def admin_page_ctf_add():
         db.execute("INSERT INTO ctf_problems(ctf_problem_name, ctf_problem_flag, ctf_problem_type, ctf_problem_contents, ctf_problem_file, ctf_problem_solved, ctf_problem_score, ctf_problem_visible) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (problemName, problemFlag, problemType, problemContents, problemFile, 0, 1000, visible))
     except:
         return {"result":"error"}
-    return {"result":problemName}
+    return {"result":"successful", "problemName":problemName}
 
 @app.route("/api/admin/ctf/update", methods=['POST'])
 def admin_page_ctf_update():
@@ -231,25 +231,27 @@ def admin_page_user_update():
 
 @app.route("/api/admin/notice/get", methods=['POST'])
 def admin_page_notice_get():
-    notice_list = db.execute("SELECT * FROM ctf_notices ORDER BY ctf_notice_idx desc")
-    return render_template("notice/index.html", notice_list=notice_list)
+    notice_idx, *_ = request.form.values()
+    contents = db.execute("SELECT ctf_notice_contents FROM ctf_notices WHERE ctf_notice_idx=?", (notice_idx, )).fetchone()[0]
+    return {"contents": contents}
 
 @app.route("/api/admin/notice/add", methods=['POST'])
 def admin_page_notice_add():
     notice_title, notice_contents, *_ = request.form.values()
     db.execute("INSERT INTO ctf_notices(ctf_notice_title, ctf_notice_contents) VALUES(?, ?)", (notice_title, notice_contents))
-    return {"result":"successful"}
+    notice_idx = db.execute("SELECT ctf_notice_idx FROM ctf_notices WHERE ctf_notice_title=?", (notice_title, )).fetchone()[0]
+    return {"result":"successful", "noticeIdx":notice_idx}
 
 @app.route("/api/admin/notice/update", methods=['POST'])
 def admin_page_notice_update():
     notice_idx, notice_title, notice_contents, *_ = request.form.values()
-    db.execute("UPDATE ctf_notices SET ctf_notice_title=?, ctf_notice_contents=? WHERE notice_idx=?", (notice_title, notice_contents, notice_idx))
+    db.execute("UPDATE ctf_notices SET ctf_notice_title=?, ctf_notice_contents=? WHERE ctf_notice_idx=?", (notice_title, notice_contents, notice_idx))
     return {"result":"successful"}
 
 @app.route("/api/admin/notice/delete", methods=['POST'])
 def admin_page_notice_delete():
     notice_idx, *_ = request.form.values()
-    db.execute("DELETE ROM ctf_notices WHERE ctf_notice_idx=?", (notice_idx, ))
+    db.execute("DELETE FROM ctf_notices WHERE ctf_notice_idx=?", (notice_idx, ))
     return {"result":"successful"}
 
 @app.route("/api/admin/user/changepassword", methods=['POST'])
