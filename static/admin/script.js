@@ -52,7 +52,7 @@ function isClick() {
     this.className += "clicked"
 }
 
-function getUser(url, id, name, csrfToken) {
+function getUser(url, id, name) {
     fetch(url, {
         method: 'POST',
         headers: {
@@ -76,7 +76,7 @@ function getUser(url, id, name, csrfToken) {
     });
 }
 
-function updateUser(url, csrfToken) {
+function updateUser(url) {
     let visible;
     if (docId("userVisible").checked === true) visible = "visible";
     fetch(url, {
@@ -91,7 +91,7 @@ function updateUser(url, csrfToken) {
     })
 }
 
-function getProblem(url, name, csrfToken, formURL) {
+function getProblem(url, name, formURL) {
     fetch(url, {
         method: 'POST',
         headers: {
@@ -113,13 +113,13 @@ function getProblem(url, name, csrfToken, formURL) {
         docId("problemFile").value = data["ctf_problem_file"];
         docId("problemVisible").checked = data["ctf_problem_visible"] ? true : false;
         docId("problemSubmit").value = "update";
-        docId("problemSubmit").setAttribute("onclick", `updateProblem("${formURL}", "${csrfToken}")`);
+        docId("problemSubmit").setAttribute("onclick", `updateProblem("${formURL}")`);
         docId("problemDelete").style.display = "inline-block";
         docId("problemForm").style.display = "block";
     });
 }
 
-function updateProblem(url, csrfToken) {
+function updateProblem(url) {
     let type, visible;
     for (var i of document.getElementsByName("problemType")) if (i.checked === true) type = i.value;
     if (docId("problemVisible").checked === true) visible = "visible";
@@ -135,7 +135,7 @@ function updateProblem(url, csrfToken) {
     })
 }
 
-function addProblemForm(formURL, csrfToken, getURL, updateURL) {
+function addProblemForm(formURL, getURL, updateURL) {
     docId("problemResult").innerText = "";
     docId("problemName").readOnly = false;
     docId("problemName").value = "";
@@ -144,13 +144,13 @@ function addProblemForm(formURL, csrfToken, getURL, updateURL) {
     docId("problemContents").value = "";
     docId("problemFile").value = "";
     docId("problemVisible").checked = true;
-    docId("problemSubmit").setAttribute("onclick", `addProblem("${formURL}", "${csrfToken}", "${getURL}", "${updateURL}")`);
+    docId("problemSubmit").setAttribute("onclick", `addProblem("${formURL}", "${getURL}", "${updateURL}")`);
     docId("problemSubmit").value = "add";
     docId("problemDelete").style.display = "none";
     docId("problemForm").style.display = "block";
 }
 
-function addProblem(url, csrfToken, getURL, updateURL) {
+function addProblem(url, getURL, updateURL) {
     let type, visible;
     for (var i of document.getElementsByName("problemType")) if (i.checked === true) type = i.value;
     if (docId("problemVisible").checked === true) visible = "visible";
@@ -164,17 +164,17 @@ function addProblem(url, csrfToken, getURL, updateURL) {
     }).then((res) => res.json()).then((data) => {
         let div = document.createElement("div");
         div.className = "problemNameBox";
-        div.setAttribute("onclick", `getProblem("${getURL}", "${data["problemName"]}", "${csrfToken}", "${updateURL}")`);
+        div.setAttribute("onclick", `getProblem("${getURL}", "${data["problemName"]}", "${updateURL}")`);
         div.innerText = data["problemName"];
         div.id = docId("problemName").value;
         docId("problem").prepend(div);
         docId("problemSubmit").value = "update";
-        docId("problemSubmit").setAttribute("onclick", `updateProblem("${updateURL}", "${csrfToken}")`);
+        docId("problemSubmit").setAttribute("onclick", `updateProblem("${updateURL}")`);
         docId("problemResult").innerText = data["result"];
     })
 }
 
-function deleteProblem(url, csrfToken) {
+function deleteProblem(url) {
     let problemName = docId("problemName").value;
     fetch(url, {
         method: 'POST',
@@ -190,17 +190,17 @@ function deleteProblem(url, csrfToken) {
     })
 }
 
-function addNoticeForm(formURL, csrfToken, getURL, updateURL) {
+function addNoticeForm(formURL, getURL, updateURL) {
     docId("noticeIdx").innerText = "";
     docId("noticeResult").innerText = "";
     docId("noticeTitle").value = "";
     docId("noticeContents").value = "";
-    docId("noticeSubmit").setAttribute("onclick", `addNotice("${formURL}", "${csrfToken}", "${getURL}", "${updateURL}")`);
+    docId("noticeSubmit").setAttribute("onclick", `addNotice("${formURL}", "${getURL}", "${updateURL}")`);
     docId("noticeSubmit").value = "add";
     docId("noticeForm").style.display = "block";
 }
 
-function addNotice(url, csrfToken, getURL, updateURL) {
+function addNotice(url, getURL, updateURL) {
     fetch(url, {
         method: 'POST',
         headers: {
@@ -211,18 +211,18 @@ function addNotice(url, csrfToken, getURL, updateURL) {
     }).then((res) => res.json()).then((data) => {
         let div = document.createElement("div");
         div.className = "problemNameBox";
-        div.setAttribute("onclick", `getNotice("${getURL}", "${data["noticeIdx"]}", "${docId("noticeTitle").value}", "${csrfToken}", "${updateURL}")`);
+        div.setAttribute("onclick", `getNotice("${getURL}", "${data["noticeIdx"]}", "${docId("noticeTitle").value}", "${updateURL}")`);
         div.innerText = docId("noticeTitle").value;
         div.id = data["noticeIdx"];
         docId("notice").prepend(div);
         docId("noticeSubmit").value = "update";
-        docId("noticeSubmit").setAttribute("onclick", `updateNotice("${updateURL}", "${csrfToken}")`);
+        docId("noticeSubmit").setAttribute("onclick", `updateNotice("${updateURL}")`);
         docId("noticeDelete").style.display = "none";
         docId("noticeResult").innerText = data["result"];
     })
 }
 
-function getNotice(url, idx, title, csrfToken, updateURL) {
+function getNotice(url, idx, title, updateURL) {
     fetch(url, {
         method: 'POST',
         headers: {
@@ -235,13 +235,13 @@ function getNotice(url, idx, title, csrfToken, updateURL) {
         docId("noticeTitle").value = title;
         docId("noticeContents").value = data["contents"];
         docId("noticeSubmit").value = "update";
-        docId("noticeSubmit").setAttribute("onclick", `updateNotice("${updateURL}", ${idx}, "${csrfToken}")`);
+        docId("noticeSubmit").setAttribute("onclick", `updateNotice("${updateURL}", ${idx})`);
         docId("noticeDelete").style.display = "inline-block";
         docId("noticeForm").style.display = "block";
     });
 }
 
-function deleteNotice(url, idx, csrfToken) {
+function deleteNotice(url, idx) {
     fetch(url, {
         method: 'POST',
         headers: {
@@ -256,7 +256,7 @@ function deleteNotice(url, idx, csrfToken) {
     })
 }
 
-function updateNotice(url, idx, csrfToken) {
+function updateNotice(url, idx) {
     fetch(url, {
         method: 'POST',
         headers: {

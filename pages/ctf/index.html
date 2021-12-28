@@ -5,25 +5,15 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <script src="{{url_for('static',filename='js/ctf.js')}}"></script>
+    <link rel="stylesheet" href="{{url_for('static',filename='ctf/style.css')}}">
+    <script src="{{url_for('static',filename='ctf/script.js')}}" defer></script>
 </head>
 <body>
-    <form action="{{url_for('ctf_run_api')}}" method='POST'>
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        <input type="submit" value="open">
-    </form>
-    <form action="{{url_for('ctf_get_api')}}" method='POST'>
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        <input type="submit" value="get">
-    </form>
-    {% for problem in problemList%}
-    <p>{{problem}}</p>
-    {% endfor %}
-    <form action="{{url_for('flag_submit')}}" method='POST'>
-        <input type="text" name="problemName">
-        <input type="text" placeholder="Flag" name="flag" id="flag">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        <input type="submit" value="submit">
-    </form>
+    <div id="panel" class="panel">
+        
+    </div>
+    <script>
+        csrfToken="{{csrf_token()}}"
+    </script>
 </body>
 </html>

@@ -24,7 +24,7 @@ def check_admin():
 
 def check_login():
     if not session.get("ctf_user_id", None):
-        abort(401)
+        return render_template("login/index.html")
 
 @app.route("/", methods=['GET'])
 def main():
@@ -94,15 +94,22 @@ def user_scoreboard_page():
     user_list = db.fetchall()
     return render_template("scoreboard/index.html", user_list=user_list)
 
-@app.route("/ctf", methods=['GET','POST'])
+@app.route("/ctf", methods=['GET'])
 def ctf_page():
     check_login()
-    if request.method == 'GET':
-        problemList = db.execute("SELECT ctf_problem_name, ctf_problem_type, ctf_problem_score FROM ctf_problems WHERE ctf_problem_visible=1 ORDER BY ctf_problem_score asc").fetchall()
-        return {"contents":problemList}
-    if request.method == 'POST':
-        problemContents = db.execute("SELECT ctf_problem_contents, ctf_problem_file FROM ctf_problems WHERE ctf_problem_visible=1").fetchone()
-        return {"contents":problemContents}
+    return render_template("ctf/index.html")
+
+@app.route("/api/ctf/list", methods=['POST'])
+def ctf_list():
+    check_login()
+    problemList = db.execute("SELECT ctf_problem_type, ctf_problem_name, ctf_problem_score FROM ctf_problems WHERE ctf_problem_visible=1 ORDER BY ctf_problem_type asc, ctf_problem_score asc").fetchall()
+    return {"contents":problemList}
+
+@app.route("/api/ctf/get", methods=['POST'])
+def ctf_get():
+    check_login()
+    problemContents = db.execute("SELECT ctf_problem_contents, ctf_problem_file, ctf_problem_solved FROM ctf_problems WHERE ctf_problem_visible=1").fetchone()
+    return {"contents":problemContents}
 
 @app.route("/api/flag/submit", methods=['POST'])
 def flag_submit():
@@ -139,7 +146,7 @@ def admin_page():
     problem_list = db.execute("SELECT ctf_problem_name FROM ctf_problems").fetchall()
     solved_list = db.execute("SELECT * FROM ctf_solved ORDER BY ctf_solved_idx desc").fetchall()
     log_list = db.execute("SELECT * FROM ctf_logs ORDER BY ctf_log_idx desc").fetchall()
-    notice_list = sorted(db.execute("SELECT ctf_notice_idx, ctf_notice_title FROM ctf_notices").fetchall(), reverse=True)
+    notice_list = db.execute("SELECT ctf_notice_idx, ctf_notice_title FROM ctf_notices ORDER BY ctf_notice_idx desc").fetchall()
     return render_template("admin/index.html", user_list=user_list, problem_list=problem_list, solved_list=solved_list, log_list=log_list, notice_list=notice_list)
 
 @app.route("/api/admin/ctf/get", methods=['POST'])

@@ -1,3 +1,7 @@
+function docId(name) {
+    return document.getElementById(name);
+}
+
 function updateProfile(url, csrfToken){
     fetch(url,{
         method: 'POST',
@@ -5,8 +9,8 @@ function updateProfile(url, csrfToken){
             'Content-Type': 'application/x-www-form-urlencoded',
             "X-CSRFToken": csrfToken
         },
-        body:`userName=${document.getElementById("userName").value}&userPw=${document.getElementById("userPw").value}&userEmail=${document.getElementById("userEmail").value}&userSchool=${document.getElementById("userSchool").value}`
+        body:`userName=${docId("userName").value}&userPw=${docId("userPw").value}&userEmail=${docId("userEmail").value}&userSchool=${docId("userSchool").value}`
     }).then((res) => res.json()).then((data)=>{
-        document.getElementById("result").innerText = data["result"];
+        docId("result").innerText = data["result"];
     })
 }
