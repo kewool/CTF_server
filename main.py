@@ -201,8 +201,8 @@ def admin_page_user_get():
     user = db.fetchone()
     return {"ctf_user_email":user[3], "ctf_user_school":user[4], "ctf_user_score":user[5], "ctf_user_solved":user[6], "ctf_user_try":user[7], "ctf_user_visible":user[8], "ctf_user_register_date":user[9], "ctf_user_last_solved_date":user[10]}
 
-@app.route("/api/admin/user/updateprofile", methods=['POST'])
-def admin_page_user_update():
+@app.route("/api/admin/user/update/profile", methods=['POST'])
+def admin_page_user_update_profile():
     if check_admin():
         abort(404)
     userId, userName, userEmail, userSchool, userVisible, *_ = request.form.values()

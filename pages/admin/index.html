@@ -18,7 +18,7 @@
         <div class="userNameBox" onclick="getUser(`{{url_for('admin_page_user_get')}}`, '{{user[0]}}', '{{user[1]}}', '{{csrf_token()}}')">{{user[0]}}({{user[1]}})</div>
         {%endfor%}
         <div>
-            <form id="userForm" action="{{url_for('admin_page_user_update')}}" method='POST' style="display:none;">
+            <div id="userForm" style="display:none;">
                 <input type="text" name="userId" id="userId" readonly><br>
                 <input type="button" id="userPwChange" value="change password"><br>
                 <input type="text" name="userName" id="userName"><br>
@@ -32,9 +32,9 @@
                 <p id="userRegisterDate"></p>
                 <p id="lastSolvedDate"></p>
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="button" id="userSubmit" value="update">
+                <input type="button" id="userSubmit" value="update" onclick="updateUser(`{{url_for('admin_page_user_update_profile')}}`, '{{csrf_token()}}')">
                 <p id="userResult"></p>
-            </form>
+            </div>
         </div>
     </div>
     <div id="problem" style="display:none;">

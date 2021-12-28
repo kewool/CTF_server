@@ -61,6 +61,7 @@ function getUser(url, id, name, csrfToken) {
         },
         body: `userId=${id}`
     }).then((res) => res.json()).then((data) => {
+        docId("userResult").innerText = "";
         docId("userId").value = id;
         docId("userName").value = name;
         docId("userEmail").value = data["ctf_user_email"];
@@ -76,14 +77,15 @@ function getUser(url, id, name, csrfToken) {
 }
 
 function updateUser(url, csrfToken) {
-    if (docId("problemVisible").checked === true) visible = "visible";
+    let visible;
+    if (docId("userVisible").checked === true) visible = "visible";
     fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             "X-CSRFToken": csrfToken
         },
-        body: ``
+        body: `userId=${docId("userId").value}&userName=${docId("userName").value}&userEmail=${docId("userEmail").value}&userSchool=${docId("userSchool").value}&userVisible=${visible}`
     }).then((res) => res.json()).then((data) => {
         docId("userResult").innerText = data["result"];
     })
