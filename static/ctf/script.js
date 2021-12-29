@@ -1,15 +1,60 @@
+let last_data;
+let last_solved_list;
+
 function docId(name) {
     return document.getElementById(name);
 }
-docId("problemPanel").addEventListener("click", () => false);
+
 docId("background").addEventListener("click", () => {
-    docId("background").style.display = "none";
-    docId("problemPanel").style.display = "none";
+    docId("background").classList.remove("active");
+    docId("problemPanel").classList.remove("active");
 });
 
-function showProblem(problemName){
-    docId("background").style.display = "block";
-    docId("problemPanel").style.display = "block";
+docId("problemPanelSolvedChange").addEventListener("click", ()=>{
+    docId("problemPanelChallange").classList.remove("active");
+    docId("problemPanelSolved").classList.add("active");
+})
+
+docId("backArrow").addEventListener("click", ()=>{
+    docId("problemPanelSolved").classList.remove("active");
+    docId("problemPanelChallange").classList.add("active");
+})
+
+docId("problemPanelSubmit").addEventListener("click", ()=>{
+    fetch("/api/flag/submit", {
+        method: 'POST',
+        headers:{
+            'Content-Type': 'application/x-www-form-urlencoded',
+            "X-CSRFToken": csrfToken
+        },
+        body: `problemTitle=${docId("problemPanelTitle").innerText}&problemFlag=${docId("problemPanelFlag").value}`
+    }).then((res)=>res.json()).then((data)=>{
+        if (data["result"] === "correct") {
+            docId("problemPanelIncorrect").classList.add("deactive");
+            docId("problemPanelFlag").classList.add("deactive");
+            docId("problemPanelSubmit").classList.add("deactive");
+            docId("problemPanelFlagSolved").classList.remove("deactive");
+            docId(docId("problemPanelTitle").innerText).classList.add("solved");
+        } else if(data["result"] === "incorrect"){
+            docId("problemPanelIncorrect").classList.remove("deactive");
+        }
+    })
+})
+
+function showProblem(problemName) {
+    docId("problemPanelSolvedChange").innerText = ""
+    docId("problemPanelTitle").innerText = "";
+    docId("problemPanelScore").innerText = "";
+    docId("problemPanelContents").innerHTML = "";
+    docId("problemPanelFile").setAttribute("href", "");
+    docId("problemPanelIncorrect").classList.add("deactive")
+    docId("problemPanelSolved").classList.remove("active");
+    docId("problemPanelChallange").classList.add("active");
+    docId("problemPanelFlag").classList.remove("deactive");
+    docId("problemPanelSubmit").classList.remove("deactive");
+    docId("problemPanelFlagSolved").classList.add("deactive");
+    docId("background").classList.add("active");
+    docId("problemPanel").classList.add("active");
     fetch("/api/ctf/get", {
         method: 'POST',
         headers:{
@@ -18,8 +63,17 @@ function showProblem(problemName){
         },
         body: `problemName=${problemName}`
     }).then((res)=>res.json()).then((data)=>{
+        data = data["contents"];
+        docId("problemPanelSolvedChange").innerText = `${data[3]} Solved`
         docId("problemPanelTitle").innerText = problemName;
-        docId("problemPanelScore").innerText = data[""]
+        docId("problemPanelScore").innerText = data[0];
+        docId("problemPanelContents").innerHTML = data[1];
+        docId("problemPanelFile").setAttribute("href", data[2]);
+        if(last_solved_list.find(element => element == problemName)){
+            docId("problemPanelFlag").classList.add("deactive");
+            docId("problemPanelSubmit").classList.add("deactive");
+            docId("problemPanelFlagSolved").classList.remove("deactive");
+        }
     })
 
 }
@@ -31,7 +85,7 @@ fetch("/api/ctf/list", {
         "X-CSRFToken": csrfToken
     }
 }).then((res) => res.json()).then((data) => {
-    let last_data = data["contents"];
+    last_data = data["contents"];
     last_data.forEach((problem, i) => {
         if(docId(problem[0]) === null){
             let div = document.createElement("div");
@@ -57,6 +111,7 @@ fetch("/api/ctf/list", {
         docId(problem[0]).append(problemBox);
         docId(problem[0])
     })
+    last_solved_list = data["solved"];
     data["solved"].map(i => docId(i).classList.add("solved"));
     console.log(data)
 

@@ -94,7 +94,7 @@ def user_scoreboard_page():
     user_list = db.fetchall()
     return render_template("scoreboard/index.html", user_list=user_list)
 
-@app.route("/ctf", methods=['GET'])
+@app.route("/challanges", methods=['GET'])
 def ctf_page():
     if check_login():
         return redirect(url_for("login_page"))

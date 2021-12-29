@@ -7,18 +7,27 @@
     <title>Document</title>
     <link rel="stylesheet" href="{{url_for('static',filename='ctf/style.css')}}">
     <script src="{{url_for('static',filename='ctf/script.js')}}" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.8.2/css/all.min.css"/>
 </head>
 <body>
     <div id="panel" class="panel">
 
     </div>
     <div id="problemPanel" class="problemPanel" style="display:none;">
-        <p id="problemPanelTitle" class="problemPanelTitle"></p>
-        <p id="problemPanelScore" class="problemPanelScore"></p>
-        <p id="problemPanelContents" class="problemPanelContents"></p>
-        <a id="problemPanelFile" class="problemPanelFile">File</a>
-        <input type="text" id="problemPanelFlag" class="problemPanelFlag" placeholder="Flag">
-        <input type="submit" id="problemPanelSubmit" class="problemPanelSubmit" value="Submit">
+        <div id="problemPanelChallange" class="problemPanelChallange active">
+            <a id="problemPanelSolvedChange" class="problemPanelSolvedChange"></a>
+            <p id="problemPanelTitle" class="problemPanelTitle"></p>
+            <p id="problemPanelScore" class="problemPanelScore"></p>
+            <p id="problemPanelContents" class="problemPanelContents"></p>
+            <a id="problemPanelFile" class="problemPanelFile">File</a><br>
+            <p id="problemPanelIncorrect" class="problemPanelIncorrect deactive">Incorrect Flag</p>
+            <input type="text" id="problemPanelFlag" class="problemPanelFlag" placeholder="Flag">
+            <input type="submit" id="problemPanelSubmit" class="problemPanelSubmit" value="Submit">
+            <p id="problemPanelFlagSolved" class="problemPanelFlagSolved deactive">Solved!</p>
+        </div>
+        <div id="problemPanelSolved" class="problemPanelSolved">
+            <i id="backArrow" class="fas fa-arrow-left backArrow"></i>
+        </div>
     </div>
     <script>
         csrfToken="{{csrf_token()}}"

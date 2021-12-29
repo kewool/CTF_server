@@ -2,6 +2,13 @@
     margin:0;
 }
 
+.active{
+    display:block !important;
+}
+.deactive{
+    display:none !important;
+}
+
 @keyframes backgroundDown {
     0% {
         background-color: rgba(74, 74, 74, 0);
@@ -56,7 +63,7 @@
     left:0;
     right:0;
     bottom: 0;
-    animation:backgroundDown 0.5s;
+    animation:backgroundDown 0.4s;
     vertical-align: middle;
     z-index: 1;
 }
@@ -70,6 +77,34 @@
     height:500px;
     position: fixed;
     text-align: center;
-    animation: problemPanelDown 0.5s;
+    animation: problemPanelDown 0.4s;
     z-index: 10;
+}
+
+.problemPanelChallange{
+    display:none;
+}
+
+.problemPanelSolvedChange{
+    position: absolute;
+    top:5px;
+    right:10px;
+}
+.problemPanelSolvedChange:hover{
+    cursor: pointer;
+    color:blue;
+}
+
+.problemPanelSolved{
+    display:none;
+}
+
+.backArrow{
+    position: absolute;
+    top:10px;
+    left:10px;
+    font-size: 24px;
+}
+.backArrow:hover{
+    cursor: pointer;
 }
