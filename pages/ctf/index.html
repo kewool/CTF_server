@@ -10,10 +10,19 @@
 </head>
 <body>
     <div id="panel" class="panel">
-        
+
+    </div>
+    <div id="problemPanel" class="problemPanel" style="display:none;">
+        <p id="problemPanelTitle" class="problemPanelTitle"></p>
+        <p id="problemPanelScore" class="problemPanelScore"></p>
+        <p id="problemPanelContents" class="problemPanelContents"></p>
+        <a id="problemPanelFile" class="problemPanelFile">File</a>
+        <input type="text" id="problemPanelFlag" class="problemPanelFlag" placeholder="Flag">
+        <input type="submit" id="problemPanelSubmit" class="problemPanelSubmit" value="Submit">
     </div>
     <script>
         csrfToken="{{csrf_token()}}"
     </script>
+    <div id="background" class="background" style="display:none;"></div>
 </body>
 </html>

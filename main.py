@@ -11,7 +11,7 @@ SECRET_KEY = os.urandom(32)
 
 def run_docker(token, problemName):
     try:
-        os.system(f"docker run -e TOKEN={token} -d --rm --name {token} -p {rd.randrange(20000,30000)}:3000 --cpus=0.1 --memory=128m {problemName}")
+        os.system(f"docker run -e TOKEN={token} -d --rm --name {token} -p {rd.randrange(20000,30000)}:3000 --cpus=0.1 --memory=128m ctf_{problemName}")
     except:
         run_docker()
 
@@ -23,8 +23,7 @@ def check_admin():
         abort(404)
 
 def check_login():
-    if not session.get("ctf_user_id", None):
-        return render_template("login/index.html")
+    return not session.get("ctf_user_id", None)
 
 @app.route("/", methods=['GET'])
 def main():
@@ -74,7 +73,8 @@ def user_list_page():
 
 @app.route("/profile", methods=['GET', 'POST'])
 def user_profile_page():
-    check_login()
+    if check_login():
+        return redirect(url_for("login_page"))
     if request.method == 'GET':
         user_info = db.execute("SELECT ctf_user_id, ctf_user_name, ctf_user_email, ctf_user_school FROM ctf_users WHERE ctf_user_id=?", (session.get("ctf_user_id"), )).fetchone()
         return render_template("profile/index.html", user_info=user_info)
@@ -96,24 +96,35 @@ def user_scoreboard_page():
 
 @app.route("/ctf", methods=['GET'])
 def ctf_page():
-    check_login()
+    if check_login():
+        return redirect(url_for("login_page"))
     return render_template("ctf/index.html")
+
+@app.route("/notice", methods=['GET'])
+def note_page():
+    notice_list = db.execute("SELECT ctf_notice_title, ctf_notice_contents FROM ctf_notices ORDER BY ctf_notice_idx desc").fetchall()
+    return render_template("notice/index.html", notice_list=notice_list)
 
 @app.route("/api/ctf/list", methods=['POST'])
 def ctf_list():
-    check_login()
+    if check_login():
+        return abort(401)
     problemList = db.execute("SELECT ctf_problem_type, ctf_problem_name, ctf_problem_score FROM ctf_problems WHERE ctf_problem_visible=1 ORDER BY ctf_problem_type asc, ctf_problem_score asc").fetchall()
-    return {"contents":problemList}
+    solvedList = db.execute("SELECT ctf_problem_name FROM ctf_solved WHERE ctf_user_id=?", (session.get("ctf_user_id"), )).fetchall()
+    return {"contents":problemList, "solved":solvedList}
 
 @app.route("/api/ctf/get", methods=['POST'])
 def ctf_get():
-    check_login()
-    problemContents = db.execute("SELECT ctf_problem_contents, ctf_problem_file, ctf_problem_solved FROM ctf_problems WHERE ctf_problem_visible=1").fetchone()
+    if check_login():
+        return abort(401)
+    problemName, *_ = request.form.values()
+    problemContents = db.execute("SELECT ctf_problem_score, ctf_problem_contents, ctf_problem_file, ctf_problem_solved FROM ctf_problems WHERE ctf_problem_visible=1 AND ctf_problem_name=?", (problemName, )).fetchone()
     return {"contents":problemContents}
 
 @app.route("/api/flag/submit", methods=['POST'])
 def flag_submit():
-    check_login()
+    if check_login():
+        abort(401)
     userId = session.get("ctf_user_id")
     problemName, flag, *_ = request.form.values()
     if db.execute("SELECT * FROM ctf_solved WHERE ctf_user_id=? AND ctf_problem_name=?", (userId, problemName)).fetchone():
@@ -269,7 +280,8 @@ def admin_page_user_changepassword():
 
 @app.route("/api/ctf/docker/get", methods=['POST'])
 def ctf_get_api():
-    check_login()
+    if check_login():
+        return redirect(url_for("login_page"))
     problemName, *_ = request.form.values()
     token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest() + problemName
     run = os.popen(f"docker ps | grep {token}").read()
@@ -279,7 +291,8 @@ def ctf_get_api():
 
 @app.route('/api/ctf/docker/run', methods=['POST'])
 def ctf_run_api():
-    check_login()
+    if check_login():
+        return redirect(url_for("login_page"))
     problemName, *_ = request.form.values()
     token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest()
     os.system(f"docker kill $(docker ps -q -f name={token})")

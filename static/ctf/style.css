@@ -2,6 +2,27 @@
     margin:0;
 }
 
+@keyframes backgroundDown {
+    0% {
+        background-color: rgba(74, 74, 74, 0);
+        transform: translate3d(0, -100%, 0);
+    }
+    to {
+        background-color: rgba(74, 74, 74, 0.6);
+        transform: translateZ(0);
+    }
+}
+@keyframes problemPanelDown {
+    0% {
+        background-color: rgba(255, 255, 255, 0);
+        transform: translate3d(-50%, -100%, 0);
+    }
+    to {
+        background-color: rgba(255, 255, 255, 0.6);
+        transform: translateZ(-50%);
+    }
+}
+
 .problemTypeText{
     font-weight: bold;
     font-size:28px;
@@ -15,4 +36,40 @@
     margin:10px;
     display: inline-block;
     text-align: center;
+}
+.problemBox:hover{
+    cursor: pointer;
+}
+
+.problemName{
+    margin:7px;
+}
+
+.solved{
+    background-color: yellowgreen;
+}
+
+.background{
+    background-color: rgba(74, 74, 74, 0.6);
+    position:fixed;
+    top:0;
+    left:0;
+    right:0;
+    bottom: 0;
+    animation:backgroundDown 0.5s;
+    vertical-align: middle;
+    z-index: 1;
+}
+
+.problemPanel{
+    background-color: white;
+    top:35px;
+    left:50%;
+    transform: translate(-50%, 0);
+    width:600px;
+    height:500px;
+    position: fixed;
+    text-align: center;
+    animation: problemPanelDown 0.5s;
+    z-index: 10;
 }
