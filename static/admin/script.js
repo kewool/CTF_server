@@ -48,9 +48,10 @@ function logList() {
     log.style.display = "block";
 }
 
-function isClick() {
-    this.className += "clicked"
-}
+docId("userPwChange").addEventListener("click", ()=>{
+    docId("userPwChange").style.display = "none";
+    docId("userPwChangeForm").style.display = "block";
+})
 
 function getUser(url, id, name) {
     fetch(url, {
@@ -61,6 +62,8 @@ function getUser(url, id, name) {
         },
         body: `userId=${id}`
     }).then((res) => res.json()).then((data) => {
+        docId("userPwChange").style.display = "block";
+        docId("userPwChangeForm").style.display = "none";
         docId("userResult").innerText = "";
         docId("userId").value = id;
         docId("userName").value = name;
@@ -70,6 +73,7 @@ function getUser(url, id, name) {
         docId("userSolved").innerText = data["ctf_user_solved"];
         docId("userTry").innerText = data["ctf_user_try"];
         docId("userVisible").checked = data["ctf_user_visible"] ? true : false;
+        docId("userAdmin").checked = data["ctf_user_admin"] ? true : false;
         docId("userRegisterDate").innerText = data["ctf_user_register_date"];
         docId("lastSolvedDate").innerText = data["ctf_user_last_solved_date"];
         docId("userForm").style.display = "block";
@@ -77,17 +81,45 @@ function getUser(url, id, name) {
 }
 
 function updateUser(url) {
-    let visible;
+    let visible, admin;
     if (docId("userVisible").checked === true) visible = "visible";
+    if (docId("userAdmin").checked === true) admin = "admin";
     fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             "X-CSRFToken": csrfToken
         },
-        body: `userId=${docId("userId").value}&userName=${docId("userName").value}&userEmail=${docId("userEmail").value}&userSchool=${docId("userSchool").value}&userVisible=${visible}`
+        body: `userId=${docId("userId").value}&userName=${docId("userName").value}&userEmail=${docId("userEmail").value}&userSchool=${docId("userSchool").value}&userVisible=${visible}&userAdmin=${admin}`
     }).then((res) => res.json()).then((data) => {
         docId("userResult").innerText = data["result"];
+    })
+}
+
+function changePassword(url){
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            "X-CSRFToken": csrfToken
+        },
+        body: `userId=${docId("userId").value}&userPw=${docId("userPw").value}`
+    }).then((res) => res.json()).then((data) => {
+        docId("userResult").innerText = data["result"];
+    })
+}
+
+function deleteUser(url){
+    fetch(url, {
+        method:'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            "X-CSRFToken": csrfToken
+        },
+        body: `userId=${docId("userId").value}`
+    }).then((res) => res.json()).then((data) => {
+        docId(docId("userId").value).remove();
+        docId("userForm").style.display = "none";
     })
 }
 
@@ -153,6 +185,9 @@ function addProblemForm(formURL, getURL, updateURL) {
 function addProblem(url, getURL, updateURL) {
     let type, visible;
     for (var i of document.getElementsByName("problemType")) if (i.checked === true) type = i.value;
+    if(docId("problemName").value === null || docId("problemFlag").value === null || type === undefined){
+        return docId("problemResult").innerText = "required problemName, problemFlag, problemType";
+    }
     if (docId("problemVisible").checked === true) visible = "visible";
     fetch(url, {
         method: 'POST',
@@ -162,7 +197,7 @@ function addProblem(url, getURL, updateURL) {
         },
         body: `problemName=${docId("problemName").value}&problemFlag=${docId("problemFlag").value}&problemType=${type}&problemContents=${docId("problemContents").value}&problemFile=${docId("problemFile").value}&problemVisible=${visible}`
     }).then((res) => res.json()).then((data) => {
-        let div = document.createElement("div");
+        if(data["result"] !== "error"){let div = document.createElement("div");
         div.className = "problemNameBox";
         div.setAttribute("onclick", `getProblem("${getURL}", "${data["problemName"]}", "${updateURL}")`);
         div.innerText = data["problemName"];
@@ -170,6 +205,7 @@ function addProblem(url, getURL, updateURL) {
         docId("problem").prepend(div);
         docId("problemSubmit").value = "update";
         docId("problemSubmit").setAttribute("onclick", `updateProblem("${updateURL}")`);
+        docId("problemDelete").style.display = "inline-block";}
         docId("problemResult").innerText = data["result"];
     })
 }

@@ -5,6 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="{{url_for('static',filename='admin/script.js')}}" defer></script>
+    <link rel="stylesheet" href="{{url_for('static',filename='admin/style.css')}}"/>
     <title>Document</title>
 </head>
 <body>
@@ -15,12 +16,16 @@
     <button onclick="logList()">log</button>
     <div id="users">
         {%for user in user_list%}
-        <div class="userNameBox" onclick="getUser(`{{url_for('admin_page_user_get')}}`, '{{user[0]}}', '{{user[1]}}')">{{user[0]}}({{user[1]}})</div>
+        <div class="userNameBox" id="{{user[0]}}" onclick="getUser(`{{url_for('admin_page_user_get')}}`, '{{user[0]}}', '{{user[1]}}')">{{user[0]}}({{user[1]}})</div>
         {%endfor%}
         <div>
             <div id="userForm" style="display:none;">
                 <input type="text" name="userId" id="userId" readonly><br>
-                <input type="button" id="userPwChange" value="change password"><br>
+                <input type="button" id="userPwChange" value="change password">
+                <div id="userPwChangeForm" class="userPwChangeForm" style="display:none;">
+                    <input id="userPw" placeholder="Password">
+                    <input type="button" value="submit" onclick="changePassword(`{{url_for('admin_page_user_change_password')}}`)">
+                </div>
                 <input type="text" name="userName" id="userName"><br>
                 <input type="email" name="userEmail" id="userEmail"><br>
                 <input type="text" name="userSchool" id="userSchool"><br>
@@ -28,11 +33,14 @@
                 <span id="userSolved"></span>
                 <span id="userTry"></span>
                 <input type="checkbox" name="userVisible" id="userVisible" value="visible">
-                <label for="userVisible">Visible</label><br>
+                <label for="userVisible">Visible</label>
+                <input type="checkbox" name="userAdmin" id="userAdmin" value="admin">
+                <label for="userAdmin">Admin</label><br>
                 <p id="userRegisterDate"></p>
                 <p id="lastSolvedDate"></p>
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <input type="button" id="userSubmit" value="update" onclick="updateUser(`{{url_for('admin_page_user_update_profile')}}`)">
+                <input type="button" id="userDelete" value="delete" onclick="deleteUser(`{{url_for('admin_page_user_delete')}}`)">
                 <p id="userResult"></p>
             </div>
         </div>
@@ -58,6 +66,7 @@
                 <label for="problemVisible">Visible</label><br>
                 <input type="button" id="problemSubmit">
                 <input type="button" id="problemDelete" value="delete" onclick="deleteProblem(`{{url_for('admin_page_ctf_delete')}}`)">
+                <input type="button" id="problemReset" value="reset" onclick="resetProblem(`')}}`)">
                 <p id="problemResult"></p>
             </div>
         </div>

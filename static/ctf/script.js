@@ -12,7 +12,31 @@ docId("background").addEventListener("click", () => {
 
 docId("problemPanelSolvedChange").addEventListener("click", ()=>{
     docId("problemPanelChallange").classList.remove("active");
+    docId("problemPanelSolved").innerText = "";
     docId("problemPanelSolved").classList.add("active");
+    fetch("/api/ctf/solved", {
+        method:'POST',
+        headers:{
+            'Content-Type': 'application/x-www-form-urlencoded',
+            "X-CSRFToken": csrfToken
+        },
+        body:`problemName=${docId("problemPanelTitle").innerText}`
+    }).then((res)=>res.json()).then((data)=>{
+        data = data["contents"]
+        console.log(data)
+        for(var user of data){
+            div = document.createElement("div");
+            solvedUserName = document.createElement("span");
+            solvedUserName.classList.add("solvedUserName");
+            solvedUserName.innerText = user[0];
+            solvedUserDate = document.createElement("span");
+            solvedUserDate.classList.add("solvedUserDate");
+            solvedUserDate.innerText = user[1];
+            div.append(solvedUserName);
+            div.append(solvedUserDate);
+            docId("problemPanelSolved").append(div);
+        }
+    })
 })
 
 docId("backArrow").addEventListener("click", ()=>{
