@@ -63,10 +63,12 @@
                 <textarea name="problemContents" id="problemContents" placeholder="Contents"></textarea><br>
                 <input type="text" name="problemFile" id="problemFile" placeholder="File URL"><br>
                 <input type="checkbox" name="problemVisible" id="problemVisible" value="visible">
-                <label for="problemVisible">Visible</label><br>
+                <label for="problemVisible">Visible</label>
+                <input type="checkbox" name="problemScoreVisible" id="problemScoreVisible" value="score">
+                <label for="problemScoreVisible">Score</label><br>
                 <input type="button" id="problemSubmit">
                 <input type="button" id="problemDelete" value="delete" onclick="deleteProblem(`{{url_for('admin_page_ctf_delete')}}`)">
-                <input type="button" id="problemReset" value="reset" onclick="resetProblem(`')}}`)">
+                <input type="button" id="problemReset" value="reset" onclick="resetProblem(`{{url_for('admin_page_ctf_reset')}}`)">
                 <p id="problemResult"></p>
             </div>
         </div>

@@ -75,6 +75,7 @@ function showProblem(problemName) {
     docId("problemPanelSolved").classList.remove("active");
     docId("problemPanelChallange").classList.add("active");
     docId("problemPanelFlag").classList.remove("deactive");
+    docId("problemPanelFlag").value = "";
     docId("problemPanelSubmit").classList.remove("deactive");
     docId("problemPanelFlagSolved").classList.add("deactive");
     docId("background").classList.add("active");
@@ -99,7 +100,6 @@ function showProblem(problemName) {
             docId("problemPanelFlagSolved").classList.remove("deactive");
         }
     })
-
 }
 
 fetch("/api/ctf/list", {

@@ -144,24 +144,27 @@ function getProblem(url, name, formURL) {
         docId("problemContents").value = data["ctf_problem_contents"];
         docId("problemFile").value = data["ctf_problem_file"];
         docId("problemVisible").checked = data["ctf_problem_visible"] ? true : false;
+        docId("problemScoreVisible").checked = data["ctf_problem_visible_score"] ? true : false;
         docId("problemSubmit").value = "update";
-        docId("problemSubmit").setAttribute("onclick", `updateProblem("${formURL}")`);
+        docId("problemSubmit").setAttribute(    "onclick", `updateProblem("${formURL}")`);
         docId("problemDelete").style.display = "inline-block";
+        docId("problemReset").style.display = "inline-block";
         docId("problemForm").style.display = "block";
     });
 }
 
 function updateProblem(url) {
-    let type, visible;
+    let type, visible, scoreVisible;
     for (var i of document.getElementsByName("problemType")) if (i.checked === true) type = i.value;
     if (docId("problemVisible").checked === true) visible = "visible";
+    if (docId("problemScoreVisible").checked === true) scoreVisible = "visible";
     fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             "X-CSRFToken": csrfToken
         },
-        body: `problemName=${docId("problemName").value}&problemFlag=${docId("problemFlag").value}&problemType=${type}&problemContents=${docId("problemContents").value}&problemFile=${docId("problemFile").value}&problemVisible=${visible}`
+        body: `problemName=${docId("problemName").value}&problemFlag=${docId("problemFlag").value}&problemType=${type}&problemContents=${docId("problemContents").value}&problemFile=${docId("problemFile").value}&problemVisible=${visible}&problemScoreVisible=${scoreVisible}`
     }).then((res) => res.json()).then((data) => {
         docId("problemResult").innerText = data["result"];
     })
@@ -176,36 +179,55 @@ function addProblemForm(formURL, getURL, updateURL) {
     docId("problemContents").value = "";
     docId("problemFile").value = "";
     docId("problemVisible").checked = true;
+    docId("problemScoreVisible").checked = true;
     docId("problemSubmit").setAttribute("onclick", `addProblem("${formURL}", "${getURL}", "${updateURL}")`);
     docId("problemSubmit").value = "add";
     docId("problemDelete").style.display = "none";
+    docId("problemReset").style.display = "none";
     docId("problemForm").style.display = "block";
 }
 
 function addProblem(url, getURL, updateURL) {
-    let type, visible;
+    let type, visible, scoreVisible;
     for (var i of document.getElementsByName("problemType")) if (i.checked === true) type = i.value;
     if(docId("problemName").value === null || docId("problemFlag").value === null || type === undefined){
         return docId("problemResult").innerText = "required problemName, problemFlag, problemType";
     }
     if (docId("problemVisible").checked === true) visible = "visible";
+    if (docId("problemScoreVisible").checked === true) scoreVisible = "visible";
     fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             "X-CSRFToken": csrfToken
         },
-        body: `problemName=${docId("problemName").value}&problemFlag=${docId("problemFlag").value}&problemType=${type}&problemContents=${docId("problemContents").value}&problemFile=${docId("problemFile").value}&problemVisible=${visible}`
+        body: `problemName=${docId("problemName").value}&problemFlag=${docId("problemFlag").value}&problemType=${type}&problemContents=${docId("problemContents").value}&problemFile=${docId("problemFile").value}&problemVisible=${visible}&problemScoreVisible=${scoreVisible}`
     }).then((res) => res.json()).then((data) => {
-        if(data["result"] !== "error"){let div = document.createElement("div");
-        div.className = "problemNameBox";
-        div.setAttribute("onclick", `getProblem("${getURL}", "${data["problemName"]}", "${updateURL}")`);
-        div.innerText = data["problemName"];
-        div.id = docId("problemName").value;
-        docId("problem").prepend(div);
-        docId("problemSubmit").value = "update";
-        docId("problemSubmit").setAttribute("onclick", `updateProblem("${updateURL}")`);
-        docId("problemDelete").style.display = "inline-block";}
+        if (data["result"] !== "error") {
+            let div = document.createElement("div");
+            div.className = "problemNameBox";
+            div.setAttribute("onclick", `getProblem("${getURL}", "${data["problemName"]}", "${updateURL}")`);
+            div.innerText = data["problemName"];
+            div.id = docId("problemName").value;
+            docId("problem").prepend(div);
+            docId("problemSubmit").value = "update";
+            docId("problemSubmit").setAttribute("onclick", `updateProblem("${updateURL}")`);
+            docId("problemDelete").style.display = "inline-block";
+            docId("problemReset").style.display = "inline-block";
+        }
+        docId("problemResult").innerText = data["result"];
+    })
+}
+
+function resetProblem(url){
+    fetch(url, {
+        method:'POsT',
+        headers:{
+            'Content-Type': 'application/x-www-form-urlencoded',
+            "X-CSRFToken": csrfToken
+        },
+        body: `problemName=${docId("problemName").value}`
+    }).then((res) => res.json()).then((data) => {
         docId("problemResult").innerText = data["result"];
     })
 }
