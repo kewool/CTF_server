@@ -71,6 +71,7 @@ function showProblem(problemName) {
     docId("problemPanelScore").innerText = "";
     docId("problemPanelContents").innerHTML = "";
     docId("problemPanelFile").setAttribute("href", "");
+    docId("problemPanelFile").style.display = "none";
     docId("problemPanelIncorrect").classList.add("deactive")
     docId("problemPanelSolved").classList.remove("active");
     docId("problemPanelChallange").classList.add("active");
@@ -93,7 +94,10 @@ function showProblem(problemName) {
         docId("problemPanelTitle").innerText = problemName;
         docId("problemPanelScore").innerText = data[0];
         docId("problemPanelContents").innerHTML = data[1];
-        docId("problemPanelFile").setAttribute("href", data[2]);
+        if(data[2]){
+            docId("problemPanelFile").style.display = "block";
+            docId("problemPanelFile").setAttribute("href", data[2]);
+        }
         if(last_solved_list.find(element => element == problemName)){
             docId("problemPanelFlag").classList.add("deactive");
             docId("problemPanelSubmit").classList.add("deactive");

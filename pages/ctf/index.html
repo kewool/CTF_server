@@ -19,7 +19,9 @@
             <p id="problemPanelTitle" class="problemPanelTitle"></p>
             <p id="problemPanelScore" class="problemPanelScore"></p>
             <p id="problemPanelContents" class="problemPanelContents"></p>
-            <a id="problemPanelFile" class="problemPanelFile">File</a><br>
+            <input type="button" id="problemPanelDocker">
+            <p id="problemPanel"></p>
+            <a id="problemPanelFile" class="problemPanelFile">File</a>
             <p id="problemPanelIncorrect" class="problemPanelIncorrect deactive">Incorrect Flag</p>
             <input type="text" id="problemPanelFlag" class="problemPanelFlag" placeholder="Flag">
             <input type="submit" id="problemPanelSubmit" class="problemPanelSubmit" value="Submit">
@@ -33,7 +35,8 @@
         </div>
     </div>
     <script>
-        csrfToken="{{csrf_token()}}"
+        csrfToken="{{csrf_token()}}";
+        host = "{{host}}";
     </script>
     <div id="background" class="background" style="display:none;"></div>
 </body>

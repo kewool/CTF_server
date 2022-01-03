@@ -3,7 +3,6 @@ from flask_wtf.csrf import CSRFProtect, CSRFError
 import os
 import random as rd
 import datetime
-import re
 from db import *
 app = Flask(__name__, template_folder="pages/")
 csrf = CSRFProtect(app)
@@ -99,7 +98,7 @@ def user_scoreboard_page():
 def ctf_page():
     if check_login():
         return redirect(url_for("login_page"))
-    return render_template("ctf/index.html")
+    return render_template("ctf/index.html", host=host)
 
 @app.route("/notice", methods=['GET'])
 def note_page():
@@ -127,7 +126,7 @@ def ctf_solved():
     if check_login():
         return abort(401)
     problemName, *_ = request.form.values()
-    problemSolved = db.execute("SELECT ctf_user_name, ctf_problem_solved_date FROM ctf_solved WHERE ctf_problem_name=? AND ctf_user_name IN (SELECT ctf_user_name FROM ctf_users WHERE ctf_user_visible=1)", (problemName, )).fetchall()
+    problemSolved = db.execute("SELECT ctf_solved.ctf_user_name, ctf_problem_solved_date FROM ctf_solved INNER JOIN ctf_users ON ctf_solved.ctf_user_name=ctf_users.ctf_user_name WHERE ctf_solved.ctf_problem_name=? AND ctf_user_visible=1", (problemName, )).fetchall()
     return {"contents":problemSolved}
 
 @app.route("/api/flag/submit", methods=['POST'])
@@ -141,25 +140,21 @@ def flag_submit():
     db.execute("SELECT ctf_problem_flag FROM ctf_problems WHERE ctf_problem_name=?", (problemName, ))
     correctFlag = db.fetchone()[0]
     if(flag == correctFlag):
-        scoreVisible = db.execute("SELECT ctf_problem_visible_score FROM ctf_problems WHERE ctf_problem_name=?", (problemName, )).fetchone()[0]
-        db.execute("INSERT INTO ctf_logs(ctf_user_id, ctf_problem_name, ctf_correct_answer, ctf_log_flag, ctf_log_date, ctf_log_user_ip) VALUES (?, ?, ?, ?, ?, ?)", (userId, problemName, "correct", flag, str(datetime.datetime.now()), request.headers.get("CF-Connecting-IP")))
-        db.execute("INSERT INTO ctf_tried(ctf_user_id, ctf_problem_name, ctf_problem_tried_date, ctf_tried_user_ip) VALUES (?, ?, ?, ?)", (userId, problemName, str(datetime.datetime.now()), request.headers.get("CF-Connecting-IP")))
-        db.execute("INSERT INTO ctf_solved(ctf_user_id, ctf_user_name, ctf_problem_name, ctf_problem_solved_date, ctf_solved_user_ip) VALUES (?, (SELECT ctf_user_name from ctf_users WHERE ctf_user_id=?) ,?, ?, ?)", (userId, userId, problemName, str(datetime.datetime.now()), request.headers.get("CF-Connecting-IP")))
-        if scoreVisible:
-            db.execute("UPDATE ctf_users SET ctf_user_solved=ctf_user_solved+1, ctf_user_try=ctf_user_try+1, ctf_user_score=ctf_user_score+(SELECT ctf_problem_score FROM ctf_problems WHERE ctf_problem_name=?), ctf_user_last_solved_date=? WHERE ctf_user_id=?", (problemName, str(datetime.datetime.now()), userId))
-            if not db.execute("SELECT ctf_user_visible FROM ctf_users WHERE ctf_user_id=?", (userId, )).fetchone()[0]:
-                db.execute("SELECT ctf_problem_solved FROM ctf_problems WHERE ctf_problem_name=?", (problemName, ))
-                score = (db.fetchone()[0] - 1) * 2
-                db.execute("UPDATE ctf_users SET ctf_user_score=ctf_user_score-? WHERE ctf_user_id IN (SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name=?)", (score, problemName))
-            else:
-                return {"result":"correct"}
-            db.execute("UPDATE ctf_problems SET ctf_problem_solved=ctf_problem_solved+1 WHERE ctf_problem_name=?", (problemName, ))
-            db.execute("UPDATE ctf_problems SET ctf_problem_score=ctf_problem_score-(ctf_problem_solved-1)*2 WHERE ctf_problem_name=? AND ctf_problem_score>70", (problemName, ))
+        db.execute("UPDATE ctf_users SET ctf_user_solved=ctf_user_solved+1, ctf_user_try=ctf_user_try+1, ctf_user_score=ctf_user_score+(SELECT ctf_problem_score FROM ctf_problems WHERE ctf_problem_name=?), ctf_user_last_solved_date=? WHERE ctf_user_id=?", (problemName, str(datetime.datetime.now()), userId))
+        db.execute("INSERT INTO ctf_logs(ctf_user_id, ctf_problem_name, ctf_correct_answer, ctf_log_flag, ctf_log_date, ctf_log_user_ip) VALUES (?, ?, ?, ?, ?, ?)", (userId, problemName, "correct", flag, str(datetime.datetime.now()), request.remote_addr))
+        db.execute("INSERT INTO ctf_tried(ctf_user_id, ctf_problem_name, ctf_problem_tried_date, ctf_tried_user_ip) VALUES (?, ?, ?, ?)", (userId, problemName, str(datetime.datetime.now()), request.remote_addr))
+        db.execute("INSERT INTO ctf_solved(ctf_user_id, ctf_user_name, ctf_problem_name, ctf_problem_solved_date, ctf_solved_user_ip) VALUES (?, ?, ?, ?, ?)", (userId, db.execute("SELECT ctf_user_name FROM ctf_users WHERE ctf_user_id=?", (userId,)).fetchone()[0], problemName, str(datetime.datetime.now()), request.remote_addr))
+        if not db.execute("SELECT ctf_user_visible FROM ctf_users WHERE ctf_user_id=?", (userId, )).fetchone()[0]:
+            return {"result":"correct"}
+        db.execute("UPDATE ctf_problems SET ctf_problem_solved=ctf_problem_solved+1 WHERE ctf_problem_name=?", (problemName, ))
+        db.execute("UPDATE ctf_problems SET ctf_problem_score=ctf_problem_score-(ctf_problem_solved-1)*2 WHERE ctf_problem_name=? AND ctf_problem_score>70", (problemName, ))
+        db.execute("SELECT ctf_problem_solved FROM ctf_problems WHERE ctf_problem_name=?", (problemName, ))
+        score = (db.fetchone()[0] - 1) * 2
+        db.execute(f"UPDATE ctf_users SET ctf_user_score=ctf_user_score-? WHERE ctf_user_id IN (SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name=?)", (score, problemName))
     else:
-        if db.execute("SELECT ctf_problem_visible_score FROM ctf_problems WHERE ctf_problem_name=?", (problemName, )):
-            db.execute("UPDATE ctf_users SET ctf_user_try=ctf_user_try+1 WHERE ctf_user_id=?", (userId, ))
-        db.execute("INSERT INTO ctf_logs(ctf_user_id, ctf_problem_name, ctf_correct_answer, ctf_log_flag, ctf_log_date, ctf_log_user_ip) VALUES (?, ?, ?, ?, ?, ?)", (userId, problemName, "incorrect", flag, str(datetime.datetime.now()), request.headers.get("CF-Connecting-IP")))
-        db.execute("INSERT INTO ctf_tried(ctf_user_id, ctf_problem_name, ctf_problem_tried_date, ctf_tried_user_ip) VALUES (?, ?, ?, ?)", (userId, problemName, str(datetime.datetime.now()), request.headers.get("CF-Connecting-IP")))
+        db.execute("UPDATE ctf_users SET ctf_user_try=ctf_user_try+1 WHERE ctf_user_id=?", (userId, ))
+        db.execute("INSERT INTO ctf_logs(ctf_user_id, ctf_problem_name, ctf_correct_answer, ctf_log_flag, ctf_log_date, ctf_log_user_ip) VALUES (?, ?, ?, ?, ?, ?)", (userId, problemName, "incorrect", flag, str(datetime.datetime.now()), request.remote_addr))
+        db.execute("INSERT INTO ctf_tried(ctf_user_id, ctf_problem_name, ctf_problem_tried_date, ctf_tried_user_ip) VALUES (?, ?, ?, ?)", (userId, problemName, str(datetime.datetime.now()), request.remote_addr))
         return {"result":"incorrect"}
     return {"result":"correct"}
 
@@ -315,10 +310,10 @@ def ctf_get_api():
         return redirect(url_for("login_page"))
     problemName, *_ = request.form.values()
     token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest() + problemName
-    run = os.popen(f"docker ps | grep {token}").read()
+    run = os.popen(f"docker ps --format '{{.Ports}} {{.Names}}' | grep {token}").read().split(" ")[0]
     if run == "":
         return {"result":"none"}
-    return re.findall(r'\d+', run.split(":")[2])[0]
+    return {"result":run}
 
 @app.route('/api/ctf/docker/run', methods=['POST'])
 def ctf_run_api():
@@ -326,11 +321,12 @@ def ctf_run_api():
         return redirect(url_for("login_page"))
     problemName, *_ = request.form.values()
     token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest()
+    if os.system(f"docker ps --format '{{.Image}} {{.Names}}' | grep {token}").read().split(" ")[0] == problemName:
+        return {"result":os.popen(f"docker ps --format '{{.Ports}}' | grep {token}").read().split(" ")[0]}
     os.system(f"docker kill $(docker ps -q -f name={token})")
     token += problemName
     run_docker(token, problemName)
-    run = os.popen(f"docker ps | grep {token}").read()
-    return re.findall(r'\d+', run.split(":")[2])[0]
+    return {"result":os.popen(f"docker ps --format '{{.Ports}} {{.Names}}' | grep {token}").read().split(" ")[0]}
     
 
 @app.route('/api/ctf/docker/stop/<token>', methods=['GET'])
