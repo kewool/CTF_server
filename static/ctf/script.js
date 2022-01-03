@@ -117,7 +117,8 @@ function showProblem(problemName) {
         docId("problemPanelContents").innerHTML = data["contents"][1];
         if(data["docker"]!=="none") {
             docId("problemPanelRunDocker").classList.add("deactive");
-            docId("problemPanelDockerPort").innerHTML = `http://${host}:${data["docker"]}<br>nc ${host} ${data["docker"]}`;
+            docId("problemPanelDockerPort").classList.remove("deactive");
+            docId("problemPanelDockerPort").innerHTML = `http://${host}:${data["docker"].split(":")[1].split("-")[0]}<br>nc ${host} ${data["docker"].split(":")[1].split("-")[0]}`;
         }
         if(!data["contents"][2])
             docId("problemPanelFile").classList.add("deactive");

@@ -94,6 +94,7 @@ def user_profile_page():
             return {"result":"incorrect password"}
         else:
             db.execute("UPDATE ctf_users SET ctf_user_name=?, ctf_user_email=?, ctf_user_school=? WHERE ctf_user_id=? AND ctf_user_password=?", (userName, userEmail, userSchool, userId, password))
+            db.execute("UPDATE ctf_solved SET ctf_user_name=? WHERE ctf_user_id=?",(userName, userId))
         return {"result":"successful"}
 
 @app.route("/scoreboard", methods=['GET'])
