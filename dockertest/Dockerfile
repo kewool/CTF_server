@@ -11,9 +11,9 @@ RUN apt-get install -y net-tools
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-RUN chmod 777 /app/run.sh /app/main.py /app/healthcheck.sh
+RUN chmod 777 /app/run.sh /app/main.py /etc/healthcheck.sh
 
-HEALTHCHECK --interval=20m CMD ./healthcheck.sh
+HEALTHCHECK --interval=20m CMD /etc/healthcheck.sh
 
 ENTRYPOINT /app/run.sh
 

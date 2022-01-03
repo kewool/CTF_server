@@ -127,7 +127,7 @@ def ctf_solved():
     if check_login():
         return abort(401)
     problemName, *_ = request.form.values()
-    problemSolved = db.execute("SELECT ctf_user_name, ctf_problem_solved_date FROM ctf_solved WHERE ctf_problem_name=?", (problemName, )).fetchall()
+    problemSolved = db.execute("SELECT ctf_user_name, ctf_problem_solved_date FROM ctf_solved WHERE ctf_problem_name=? AND ctf_user_name IN (SELECT ctf_user_name FROM ctf_users WHERE ctf_user_visible=1)", (problemName, )).fetchall()
     return {"contents":problemSolved}
 
 @app.route("/api/flag/submit", methods=['POST'])

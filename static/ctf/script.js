@@ -12,7 +12,7 @@ docId("background").addEventListener("click", () => {
 
 docId("problemPanelSolvedChange").addEventListener("click", ()=>{
     docId("problemPanelChallange").classList.remove("active");
-    docId("problemPanelSolved").innerText = "";
+    docId("problemPanelSolvedList").innerText = "";
     docId("problemPanelSolved").classList.add("active");
     fetch("/api/ctf/solved", {
         method:'POST',
@@ -34,7 +34,7 @@ docId("problemPanelSolvedChange").addEventListener("click", ()=>{
             solvedUserDate.innerText = user[1];
             div.append(solvedUserName);
             div.append(solvedUserDate);
-            docId("problemPanelSolved").append(div);
+            docId("problemPanelSolvedList").append(div);
         }
     })
 })
