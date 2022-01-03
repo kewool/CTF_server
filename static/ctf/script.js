@@ -75,7 +75,7 @@ docId("problemPanelRunDocker").addEventListener("click", ()=>{
         body: `problemName=${docId("problemPanelTitle").innerText}`
     }).then((res) => res.json()).then((data) => {
         console.log(data)
-        if (data["result"]) {
+        if (data["docker"]) {
             docId("problemPanelRunDocker").classList.add("deactive");
             docId("problemPanelDockerPort").classList.remove("deactive");
             docId("problemPanelDockerPort").innerHTML = `http://${host}:${data["docker"].split(":")[1].split("-")[0]}<br>nc ${host} ${data["docker"].split(":")[1].split("-")[0]}`;
