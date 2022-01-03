@@ -51,7 +51,7 @@ docId("problemPanelSubmit").addEventListener("click", ()=>{
             'Content-Type': 'application/x-www-form-urlencoded',
             "X-CSRFToken": csrfToken
         },
-        body: `problemTitle=${docId("problemPanelTitle").innerText}&problemFlag=${docId("problemPanelFlag").value}`
+        body: `problemName=${docId("problemPanelTitle").innerText}&problemFlag=${docId("problemPanelFlag").value}`
     }).then((res)=>res.json()).then((data)=>{
         if (data["result"] === "correct") {
             docId("problemPanelIncorrect").classList.add("deactive");
@@ -65,13 +65,34 @@ docId("problemPanelSubmit").addEventListener("click", ()=>{
     })
 })
 
+docId("problemPanelRunDocker").addEventListener("click", ()=>{
+    fetch("/api/ctf/docker/run",{
+        method: 'POST',
+        headers:{
+            'Content-Type': 'application/x-www-form-urlencoded',
+            "X-CSRFToken": csrfToken
+        },
+        body: `problemName=${docId("problemPanelTitle").innerText}`
+    }).then((res) => res.json()).then((data) => {
+        console.log(data)
+        if (data["result"]) {
+            docId("problemPanelRunDocker").classList.add("deactive");
+            docId("problemPanelDockerPort").classList.remove("deactive");
+            docId("problemPanelDockerPort").innerHTML = `http://${host}:${data["docker"].split(":")[1].split("-")[0]}<br>nc ${host} ${data["docker"].split(":")[1].split("-")[0]}`;
+        }
+    })
+})
+
 function showProblem(problemName) {
     docId("problemPanelSolvedChange").innerText = ""
     docId("problemPanelTitle").innerText = "";
     docId("problemPanelScore").innerText = "";
     docId("problemPanelContents").innerHTML = "";
+    docId("problemPanelRunDocker").classList.remove("deactive");
+    docId("problemPanelDockerPort").classList.add("deactive");
+    docId("problemPanelDockerPort").innerText = "";
     docId("problemPanelFile").setAttribute("href", "");
-    docId("problemPanelFile").style.display = "none";
+    docId("problemPanelFile").classList.remove("deactive");
     docId("problemPanelIncorrect").classList.add("deactive")
     docId("problemPanelSolved").classList.remove("active");
     docId("problemPanelChallange").classList.add("active");
@@ -89,15 +110,19 @@ function showProblem(problemName) {
         },
         body: `problemName=${problemName}`
     }).then((res)=>res.json()).then((data)=>{
-        data = data["contents"];
-        docId("problemPanelSolvedChange").innerText = `${data[3]} Solved`
+        console.log(data)
+        docId("problemPanelSolvedChange").innerText = `${data["contents"][3]} Solved`
         docId("problemPanelTitle").innerText = problemName;
-        docId("problemPanelScore").innerText = data[0];
-        docId("problemPanelContents").innerHTML = data[1];
-        if(data[2]){
-            docId("problemPanelFile").style.display = "block";
-            docId("problemPanelFile").setAttribute("href", data[2]);
+        docId("problemPanelScore").innerText = data["contents"][0];
+        docId("problemPanelContents").innerHTML = data["contents"][1];
+        if(data["docker"]!=="none") {
+            docId("problemPanelRunDocker").classList.add("deactive");
+            docId("problemPanelDockerPort").innerHTML = `http://${host}:${data["docker"]}<br>nc ${host} ${data["docker"]}`;
         }
+        if(!data["contents"][2])
+            docId("problemPanelFile").classList.add("deactive");
+        else
+            docId("problemPanelFile").setAttribute("href", data["contents"][2]);
         if(last_solved_list.find(element => element == problemName)){
             docId("problemPanelFlag").classList.add("deactive");
             docId("problemPanelSubmit").classList.add("deactive");

@@ -3,6 +3,8 @@ FROM python:3.9
 ENV PORT 3000
 
 COPY . /app
+COPY ./healthcheck.sh /etc
+RUN rm -rf /app/healthcheck.sh
 WORKDIR /app
 
 RUN apt-get -y update

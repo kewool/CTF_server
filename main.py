@@ -7,6 +7,7 @@ from db import *
 app = Flask(__name__, template_folder="pages/")
 csrf = CSRFProtect(app)
 host = "ctf.kewool.net"
+dockerHost = "ctf.nahee.kim"
 SECRET_KEY = os.urandom(32)
 
 def run_docker(token, problemName):
@@ -24,6 +25,13 @@ def check_admin():
 
 def check_login():
     return not session.get("ctf_user_id", None)
+
+def check_container(problemName):
+    token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest() + problemName
+    run = os.popen("docker ps --format '{{.Ports}} {{.Names}}' | grep " + token).read().split(" ")[0]
+    if run == "":
+        return "none"
+    return run
 
 @app.route("/", methods=['GET'])
 def main():
@@ -98,7 +106,7 @@ def user_scoreboard_page():
 def ctf_page():
     if check_login():
         return redirect(url_for("login_page"))
-    return render_template("ctf/index.html", host=host)
+    return render_template("ctf/index.html", host=dockerHost)
 
 @app.route("/notice", methods=['GET'])
 def note_page():
@@ -119,7 +127,7 @@ def ctf_get():
         return abort(401)
     problemName, *_ = request.form.values()
     problemContents = db.execute("SELECT ctf_problem_score, ctf_problem_contents, ctf_problem_file, ctf_problem_solved FROM ctf_problems WHERE ctf_problem_visible=1 AND ctf_problem_name=?", (problemName, )).fetchone()
-    return {"contents":problemContents}
+    return {"contents":problemContents, "docker": check_container(problemName)}
 
 @app.route("/api/ctf/solved", methods=['POST'])
 def ctf_solved():
@@ -312,21 +320,24 @@ def ctf_get_api():
     token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest() + problemName
     run = os.popen(f"docker ps --format '{{.Ports}} {{.Names}}' | grep {token}").read().split(" ")[0]
     if run == "":
-        return {"result":"none"}
-    return {"result":run}
+        return {"docker":"none"}
+    return {"docker":run}
 
 @app.route('/api/ctf/docker/run', methods=['POST'])
 def ctf_run_api():
     if check_login():
         return redirect(url_for("login_page"))
     problemName, *_ = request.form.values()
+    check = check_container(problemName)
+    if check != "none":
+        return {"docker":check}
     token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest()
-    if os.system(f"docker ps --format '{{.Image}} {{.Names}}' | grep {token}").read().split(" ")[0] == problemName:
-        return {"result":os.popen(f"docker ps --format '{{.Ports}}' | grep {token}").read().split(" ")[0]}
+    # if os.system(f"docker ps --format '{{.Image}} {{.Names}}' | grep {token}").read().split(" ")[0] == problemName:
+    #     return {"result":os.popen(f"docker ps --format '{{.Ports}}' | grep {token}").read().split(" ")[0]}
     os.system(f"docker kill $(docker ps -q -f name={token})")
     token += problemName
     run_docker(token, problemName)
-    return {"result":os.popen(f"docker ps --format '{{.Ports}} {{.Names}}' | grep {token}").read().split(" ")[0]}
+    return {"docker":os.popen("docker ps --format '{{.Ports}} {{.Names}}' | grep " + token).read().split(" ")[0]}
     
 
 @app.route('/api/ctf/docker/stop/<token>', methods=['GET'])
