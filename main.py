@@ -3,7 +3,9 @@ from flask_wtf.csrf import CSRFProtect, CSRFError
 import os
 import random as rd
 import datetime
+import logging
 from db import *
+logging.basicConfig(filename = "logs/project.log", level = logging.INFO)
 app = Flask(__name__, template_folder="pages/")
 csrf = CSRFProtect(app)
 host = "ctf.kewool.net"
@@ -150,9 +152,9 @@ def flag_submit():
     correctFlag = db.fetchone()[0]
     if(flag == correctFlag):
         db.execute("UPDATE ctf_users SET ctf_user_solved=ctf_user_solved+1, ctf_user_try=ctf_user_try+1, ctf_user_score=ctf_user_score+(SELECT ctf_problem_score FROM ctf_problems WHERE ctf_problem_name=?), ctf_user_last_solved_date=? WHERE ctf_user_id=?", (problemName, str(datetime.datetime.now()), userId))
-        db.execute("INSERT INTO ctf_logs(ctf_user_id, ctf_problem_name, ctf_correct_answer, ctf_log_flag, ctf_log_date, ctf_log_user_ip) VALUES (?, ?, ?, ?, ?, ?)", (userId, problemName, "correct", flag, str(datetime.datetime.now()), request.remote_addr))
-        db.execute("INSERT INTO ctf_tried(ctf_user_id, ctf_problem_name, ctf_problem_tried_date, ctf_tried_user_ip) VALUES (?, ?, ?, ?)", (userId, problemName, str(datetime.datetime.now()), request.remote_addr))
-        db.execute("INSERT INTO ctf_solved(ctf_user_id, ctf_user_name, ctf_problem_name, ctf_problem_solved_date, ctf_solved_user_ip) VALUES (?, ?, ?, ?, ?)", (userId, db.execute("SELECT ctf_user_name FROM ctf_users WHERE ctf_user_id=?", (userId,)).fetchone()[0], problemName, str(datetime.datetime.now()), request.remote_addr))
+        db.execute("INSERT INTO ctf_logs(ctf_user_id, ctf_problem_name, ctf_correct_answer, ctf_log_flag, ctf_log_date, ctf_log_user_ip) VALUES (?, ?, ?, ?, ?, ?)", (userId, problemName, "correct", flag, str(datetime.datetime.now()), request.headers.get("CF-Connecting-IP")))
+        db.execute("INSERT INTO ctf_tried(ctf_user_id, ctf_problem_name, ctf_problem_tried_date, ctf_tried_user_ip) VALUES (?, ?, ?, ?)", (userId, problemName, str(datetime.datetime.now()), request.headers.get("CF-Connecting-IP")))
+        db.execute("INSERT INTO ctf_solved(ctf_user_id, ctf_user_name, ctf_problem_name, ctf_problem_solved_date, ctf_solved_user_ip) VALUES (?, ?, ?, ?, ?)", (userId, db.execute("SELECT ctf_user_name FROM ctf_users WHERE ctf_user_id=?", (userId,)).fetchone()[0], problemName, str(datetime.datetime.now()), request.headers.get("CF-Connecting-IP")))
         if not db.execute("SELECT ctf_user_visible FROM ctf_users WHERE ctf_user_id=?", (userId, )).fetchone()[0]:
             return {"result":"correct"}
         db.execute("UPDATE ctf_problems SET ctf_problem_solved=ctf_problem_solved+1 WHERE ctf_problem_name=?", (problemName, ))
@@ -162,8 +164,8 @@ def flag_submit():
         db.execute(f"UPDATE ctf_users SET ctf_user_score=ctf_user_score-? WHERE ctf_user_id IN (SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name=?)", (score, problemName))
     else:
         db.execute("UPDATE ctf_users SET ctf_user_try=ctf_user_try+1 WHERE ctf_user_id=?", (userId, ))
-        db.execute("INSERT INTO ctf_logs(ctf_user_id, ctf_problem_name, ctf_correct_answer, ctf_log_flag, ctf_log_date, ctf_log_user_ip) VALUES (?, ?, ?, ?, ?, ?)", (userId, problemName, "incorrect", flag, str(datetime.datetime.now()), request.remote_addr))
-        db.execute("INSERT INTO ctf_tried(ctf_user_id, ctf_problem_name, ctf_problem_tried_date, ctf_tried_user_ip) VALUES (?, ?, ?, ?)", (userId, problemName, str(datetime.datetime.now()), request.remote_addr))
+        db.execute("INSERT INTO ctf_logs(ctf_user_id, ctf_problem_name, ctf_correct_answer, ctf_log_flag, ctf_log_date, ctf_log_user_ip) VALUES (?, ?, ?, ?, ?, ?)", (userId, problemName, "incorrect", flag, str(datetime.datetime.now()), request.headers.get("CF-Connecting-IP")))
+        db.execute("INSERT INTO ctf_tried(ctf_user_id, ctf_problem_name, ctf_problem_tried_date, ctf_tried_user_ip) VALUES (?, ?, ?, ?)", (userId, problemName, str(datetime.datetime.now()), request.headers.get("CF-Connecting-IP")))
         return {"result":"incorrect"}
     return {"result":"correct"}
 
