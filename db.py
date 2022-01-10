@@ -10,6 +10,7 @@ db.execute("CREATE TABLE IF NOT EXISTS ctf_solved(ctf_solved_idx INTEGER PRIMARY
 db.execute("CREATE TABLE IF NOT EXISTS ctf_tried(ctf_tried_idx INTEGER PRIMARY KEY AUTOINCREMENT, ctf_user_id text, ctf_problem_name text, ctf_problem_tried_date text, ctf_tried_user_ip text)")
 db.execute("CREATE TABLE IF NOT EXISTS ctf_logs(ctf_log_idx INTEGER PRIMARY KEY AUTOINCREMENT, ctf_user_id text, ctf_problem_name text, ctf_correct_answer text, ctf_log_flag text, ctf_log_date text, ctf_log_user_ip text)")
 db.execute("CREATE TABLE IF NOT EXISTS ctf_notices(ctf_notice_idx INTEGER PRIMARY KEY AUTOINCREMENT, ctf_notice_title text, ctf_notice_contents text)")
+db.execute("CREATE TABLE IF NOT EXISTS ctf_stop(stop)")
 try:
     db.execute("INSERT INTO ctf_users(ctf_user_id, ctf_user_password, ctf_user_name, ctf_user_email, ctf_user_school, ctf_user_score, ctf_user_solved, ctf_user_try, ctf_user_visible, ctf_user_admin) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", ("admin", hashlib.sha256("admin".encode()).hexdigest(), "admin", None, None, 0, 0, 0, 0, 1))
 except:

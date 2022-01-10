@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, abort
 from flask_wtf.csrf import CSRFProtect, CSRFError
 import os
+import subprocess
 import random as rd
 import datetime
 import logging
@@ -14,7 +15,7 @@ SECRET_KEY = os.urandom(32)
 
 def run_docker(token, problemName):
     try:
-        os.system(f"docker run -e TOKEN={token} -e HOST={host} -d --rm --name {token} -p {rd.randrange(20000,30000)}:3000 --cpus=0.1 --memory=200m --memory-swap=200m ctf_{problemName}")
+        subprocess.Popen(f"docker run -e TOKEN={token} -e HOST={host} -d --rm --name {token} -p {rd.randrange(20000,30000)}:3000 --cpus=0.1 --memory=128m --memory-swap=128m ctf_{problemName}", stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
     except:
         run_docker()
 
@@ -30,7 +31,7 @@ def check_login():
 
 def check_container(problemName):
     token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest() + problemName
-    run = os.popen("docker ps --format '{{.Ports}} {{.Names}}' | grep " + token).read().split(" ")[0]
+    run = subprocess.Popen("docker ps --format '{{.Ports}} {{.Names}}' | grep " + token, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).communicate()[0].decode('utf-8').split(" ")[0]
     if run == "":
         return "none"
     return run
@@ -321,7 +322,7 @@ def ctf_get_api():
         return redirect(url_for("login_page"))
     problemName, *_ = request.form.values()
     token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest() + problemName
-    run = os.popen(f"docker ps --format '{{.Ports}} {{.Names}}' | grep {token}").read().split(" ")[0]
+    run = subprocess.Popen(f"docker ps --format '{{.Ports}} {{.Names}}' | grep {token}", stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).communicate()[0].decode('utf-8').split(" ")[0]
     if run == "":
         return {"docker":"none"}
     return {"docker":run}
@@ -337,16 +338,16 @@ def ctf_run_api():
     token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest()
     # if os.system(f"docker ps --format '{{.Image}} {{.Names}}' | grep {token}").read().split(" ")[0] == problemName:
     #     return {"result":os.popen(f"docker ps --format '{{.Ports}}' | grep {token}").read().split(" ")[0]}
-    os.system(f"docker kill $(docker ps -q -f name={token})")
+    subprocess.system(f"docker kill $(docker ps -q -f name={token})")
     token += problemName
     run_docker(token, problemName)
-    return {"docker":os.popen("docker ps --format '{{.Ports}} {{.Names}}' | grep " + token).read().split(" ")[0]}
+    return {"docker":subprocess.Popen("docker ps --format '{{.Ports}} {{.Names}}' | grep " + token, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).communicate()[0].decode('utf-8').split(" ")[0]}
     
 
 @app.route('/api/ctf/docker/stop/<token>', methods=['GET'])
 def ctf_stop_api(token):
     try:
-        os.system(f"docker kill {token}")
+        subprocess.Popen(f"docker kill {token}", stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
     except:
         return 'failed'
     return 'successful'
