@@ -87,22 +87,22 @@ def user_profile_page():
     if check_login():
         return redirect(url_for("login_page"))
     if request.method == 'GET':
-        user_info = db.execute("SELECT ctf_user_id, ctf_user_name, ctf_user_email, ctf_user_school FROM ctf_users WHERE ctf_user_id=?", (session.get("ctf_user_id"), )).fetchone()
+        user_info = db.execute("SELECT ctf_user_id, ctf_user_name, ctf_user_email, ctf_user_school, ctf_user_introduce FROM ctf_users WHERE ctf_user_id=?", (session.get("ctf_user_id"), )).fetchone()
         return render_template("profile/index.html", user_info=user_info)
     elif request.method == 'POST':
-        userName, userPw, userEmail, userSchool, *_ = request.form.values()
+        userName, userPw, userEmail, userSchool, userIntroduce, *_ = request.form.values()
         userId = session.get("ctf_user_id")
         password = hashlib.sha256(userPw.encode()).hexdigest()
         if db.execute("SELECT * FROM ctf_users WHERE ctf_user_id=? AND ctf_user_password=?", (userId, password)).fetchone() == None:
             return {"result":"incorrect password"}
         else:
-            db.execute("UPDATE ctf_users SET ctf_user_name=?, ctf_user_email=?, ctf_user_school=? WHERE ctf_user_id=? AND ctf_user_password=?", (userName, userEmail, userSchool, userId, password))
+            db.execute("UPDATE ctf_users SET ctf_user_name=?, ctf_user_email=?, ctf_user_school=?, ctf_user_introduce=? WHERE ctf_user_id=? AND ctf_user_password=?", (userName, userEmail, userSchool, userIntroduce, userId, password))
             db.execute("UPDATE ctf_solved SET ctf_user_name=? WHERE ctf_user_id=?",(userName, userId))
         return {"result":"successful"}
 
 @app.route("/scoreboard", methods=['GET'])
 def user_scoreboard_page():
-    db.execute("SELECT ctf_user_name, ctf_user_score FROM ctf_users WHERE ctf_user_visible=1 ORDER BY ctf_user_score desc, ctf_user_last_solved_date asc")
+    db.execute("SELECT ctf_user_name, ctf_user_introduce, ctf_user_score FROM ctf_users WHERE ctf_user_visible=1 ORDER BY ctf_user_score desc, ctf_user_last_solved_date asc")
     user_list = db.fetchall()
     return render_template("scoreboard/index.html", user_list=user_list)
 
@@ -243,17 +243,17 @@ def admin_page_user_get():
     userId, *_ = request.form.values()
     db.execute("SELECT * FROM ctf_users WHERE ctf_user_id=?", (userId, ))
     user = db.fetchone()
-    return {"ctf_user_email":user[3], "ctf_user_school":user[4], "ctf_user_score":user[5], "ctf_user_solved":user[6], "ctf_user_try":user[7], "ctf_user_visible":user[8], "ctf_user_register_date":user[9], "ctf_user_last_solved_date":user[10], "ctf_user_admin":user[11]}
+    return {"ctf_user_email":user[3], "ctf_user_school":user[4], "ctf_user_introduce":user[5], "ctf_user_score":user[6], "ctf_user_solved":user[7], "ctf_user_try":user[8], "ctf_user_visible":user[9], "ctf_user_register_date":user[10], "ctf_user_last_solved_date":user[11], "ctf_user_admin":user[12]}
 
 @app.route("/api/admin/user/update/profile", methods=['POST'])
 def admin_page_user_update_profile():
     check_admin()
-    userId, userName, userEmail, userSchool, userVisible, userAdmin, *_ = request.form.values()
+    userId, userName, userEmail, userSchool, userIntroduce, userVisible, userAdmin, *_ = request.form.values()
     visible = 1 if userVisible == "visible" else 0
     admin = 1 if userAdmin == "admin" else 0
     visible_before = db.execute("SELECT ctf_user_visible FROM ctf_users WHERE ctf_user_id=?", (userId, )).fetchone()[0]
     try:
-        db.execute("UPDATE ctf_users SET ctf_user_name=?, ctf_user_email=?, ctf_user_school=?, ctf_user_visible=?, ctf_user_admin=? WHERE ctf_user_id=?", (userName, userEmail, userSchool, visible, admin, userId))
+        db.execute("UPDATE ctf_users SET ctf_user_name=?, ctf_user_email=?, ctf_user_school=?, ctf_user_introduce=?, ctf_user_visible=?, ctf_user_admin=? WHERE ctf_user_id=?", (userName, userEmail, userSchool, userIntroduce, visible, admin, userId))
     except:
         return {"result":"failed"}
     if visible != visible_before:

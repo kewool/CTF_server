@@ -69,6 +69,7 @@ function getUser(url, id, name) {
         docId("userName").value = name;
         docId("userEmail").value = data["ctf_user_email"];
         docId("userSchool").value = data["ctf_user_school"];
+        docId("userIntroduce").value = data["ctf_user_introduce"];
         docId("userScore").innerText = data["ctf_user_score"];
         docId("userSolved").innerText = data["ctf_user_solved"];
         docId("userTry").innerText = data["ctf_user_try"];
@@ -90,7 +91,7 @@ function updateUser(url) {
             'Content-Type': 'application/x-www-form-urlencoded',
             "X-CSRFToken": csrfToken
         },
-        body: `userId=${docId("userId").value}&userName=${docId("userName").value}&userEmail=${docId("userEmail").value}&userSchool=${docId("userSchool").value}&userVisible=${visible}&userAdmin=${admin}`
+        body: `userId=${docId("userId").value}&userName=${docId("userName").value}&userEmail=${docId("userEmail").value}&userSchool=${docId("userSchool").value}&userIntroduce=${docId("userIntroduce").value}&userVisible=${visible}&userAdmin=${admin}`
     }).then((res) => res.json()).then((data) => {
         docId("userResult").innerText = data["result"];
     })
