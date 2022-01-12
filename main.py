@@ -80,7 +80,7 @@ def register_page():
 def user_list_page():
     db.execute("SELECT ctf_user_name FROM ctf_users WHERE ctf_user_visible=1")
     user_list = db.fetchall()
-    return render_template("user_list/index.html", user_list=user_list)
+    return render_template("user_list/index.html", user_list=user_list, userId=session.get('ctf_user_id', None))
 
 @app.route("/profile", methods=['GET', 'POST'])
 def user_profile_page():
@@ -88,7 +88,7 @@ def user_profile_page():
         return redirect(url_for("login_page"))
     if request.method == 'GET':
         user_info = db.execute("SELECT ctf_user_id, ctf_user_name, ctf_user_email, ctf_user_school, ctf_user_introduce FROM ctf_users WHERE ctf_user_id=?", (session.get("ctf_user_id"), )).fetchone()
-        return render_template("profile/index.html", user_info=user_info)
+        return render_template("profile/index.html", user_info=user_info, userId=session.get('ctf_user_id', None))
     elif request.method == 'POST':
         userName, userPw, userEmail, userSchool, userIntroduce, *_ = request.form.values()
         userId = session.get("ctf_user_id")
@@ -104,7 +104,7 @@ def user_profile_page():
 def user_scoreboard_page():
     db.execute("SELECT ctf_user_name, ctf_user_introduce, ctf_user_score FROM ctf_users WHERE ctf_user_visible=1 ORDER BY ctf_user_score desc, ctf_user_last_solved_date asc")
     user_list = db.fetchall()
-    return render_template("scoreboard/index.html", user_list=user_list)
+    return render_template("scoreboard/index.html", user_list=user_list, userId=session.get('ctf_user_id', None))
 
 @app.route("/challanges", methods=['GET'])
 def ctf_page():
@@ -115,7 +115,7 @@ def ctf_page():
 @app.route("/notice", methods=['GET'])
 def note_page():
     notice_list = db.execute("SELECT ctf_notice_title, ctf_notice_contents FROM ctf_notices ORDER BY ctf_notice_idx desc").fetchall()
-    return render_template("notice/index.html", notice_list=notice_list)
+    return render_template("notice/index.html", notice_list=notice_list, userId=session.get('ctf_user_id', None))
 
 @app.route("/api/ctf/list", methods=['POST'])
 def ctf_list():
@@ -145,6 +145,8 @@ def ctf_solved():
 def flag_submit():
     if check_login():
         abort(401)
+    if db.execute("SELECT * FROM ctf_stop WHERE stop=1").fetchone():
+        return {"result":"timeover"}
     userId = session.get("ctf_user_id")
     problemName, flag, *_ = request.form.values()
     if db.execute("SELECT * FROM ctf_solved WHERE ctf_user_id=? AND ctf_problem_name=?", (userId, problemName)).fetchone():
@@ -178,7 +180,8 @@ def admin_page():
     solved_list = db.execute("SELECT * FROM ctf_solved ORDER BY ctf_solved_idx desc").fetchall()
     log_list = db.execute("SELECT * FROM ctf_logs ORDER BY ctf_log_idx desc").fetchall()
     notice_list = db.execute("SELECT ctf_notice_idx, ctf_notice_title FROM ctf_notices ORDER BY ctf_notice_idx desc").fetchall()
-    return render_template("admin/index.html", user_list=user_list, problem_list=problem_list, solved_list=solved_list, log_list=log_list, notice_list=notice_list)
+    stop = db.execute("SELECT * FROM ctf_stop").fetchone()
+    return render_template("admin/index.html", user_list=user_list, problem_list=problem_list, solved_list=solved_list, log_list=log_list, notice_list=notice_list, stop=stop[0])
 
 @app.route("/api/admin/ctf/get", methods=['POST'])
 def admin_page_ctf_get():
@@ -236,6 +239,16 @@ def admin_page_ctf_delete():
     db.execute("DELETE FROM ctf_tried WHERE ctf_problem_name=?", (problemName, ))
     db.execute("DELETE FROM ctf_solved WHERE ctf_problem_name=?", (problemName, ))
     return {"result":"succesful"}
+
+@app.route("/api/admin/ctf/stop", methods=['POST'])
+def admin_page_ctf_stop():
+    check_admin()
+    value, *_ = request.form.values()
+    try:
+        db.execute("UPDATE ctf_stop SET stop=?",value)
+    except:
+        return {"result":"error"}
+    return {"result":"successful"}
 
 @app.route("/api/admin/user/get", methods=['POST'])
 def admin_page_user_get():
@@ -322,7 +335,7 @@ def ctf_get_api():
         return redirect(url_for("login_page"))
     problemName, *_ = request.form.values()
     token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest() + problemName
-    run = subprocess.Popen(f"docker ps --format '{{.Ports}} {{.Names}}' | grep {token}", stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).communicate()[0].decode('utf-8').split(" ")[0]
+    run = subprocess.Popen("docker ps --format '{{.Ports}} {{.Names}}' | grep " + token, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).communicate()[0].decode('utf-8').split(" ")[0]
     if run == "":
         return {"docker":"none"}
     return {"docker":run}
@@ -338,7 +351,7 @@ def ctf_run_api():
     token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest()
     # if os.system(f"docker ps --format '{{.Image}} {{.Names}}' | grep {token}").read().split(" ")[0] == problemName:
     #     return {"result":os.popen(f"docker ps --format '{{.Ports}}' | grep {token}").read().split(" ")[0]}
-    subprocess.system(f"docker kill $(docker ps -q -f name={token})")
+    subprocess.Popen(f"docker kill $(docker ps -q -f name={token})", stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
     token += problemName
     run_docker(token, problemName)
     return {"docker":subprocess.Popen("docker ps --format '{{.Ports}} {{.Names}}' | grep " + token, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).communicate()[0].decode('utf-8').split(" ")[0]}

@@ -14,6 +14,7 @@
     <button onclick="noticeList()">notice</button>
     <button onclick="solvedList()">solved</button>
     <button onclick="logList()">log</button>
+    <button onclick="stopList()">stop</button>
     <div id="users">
         {%for user in user_list%}
         <div class="userNameBox" id="{{user[0]}}" onclick="getUser(`{{url_for('admin_page_user_get')}}`, '{{user[0]}}', '{{user[1]}}')">{{user[0]}}({{user[1]}})</div>
@@ -99,6 +100,15 @@
         {%for log in log_list%}
         <p>{{log}}</p>
         {%endfor%}
+    </div>
+    <div id="stop" style="display:none">
+        {%if stop%}
+        <input type="checkbox" id="ctfStopCheckbox" value="stop" checked>
+        {%else%}
+        <input type="checkbox" id="ctfStopCheckbox" value="stop">
+        {%endif%}
+        <input type="button" id="ctfStop" value="run" onclick="stopCTF(`{{url_for('admin_page_ctf_stop')}}`)">
+        <p id="stopResult"></p>
     </div>
     <script>
         csrfToken = "{{csrf_token()}}";

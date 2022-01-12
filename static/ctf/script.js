@@ -54,6 +54,7 @@ docId("problemPanelSubmit").addEventListener("click", ()=>{
         body: `problemName=${docId("problemPanelTitle").innerText}&problemFlag=${docId("problemPanelFlag").value}`
     }).then((res)=>res.json()).then((data)=>{
         if (data["result"] === "correct") {
+            console.log(data)
             docId("problemPanelIncorrect").classList.add("deactive");
             docId("problemPanelFlag").classList.add("deactive");
             docId("problemPanelSubmit").classList.add("deactive");
@@ -81,6 +82,27 @@ docId("problemPanelRunDocker").addEventListener("click", ()=>{
             docId("problemPanelDockerPort").innerHTML = `http://${host}:${data["docker"].split(":")[1].split("-")[0]}<br>nc ${host} ${data["docker"].split(":")[1].split("-")[0]}`;
         }
     })
+
+
+    // setTimeout(() => {
+    //     fetch("/api/ctf/docker/get", {
+    //         method: 'POST',
+    //         headers:{
+    //             'Content-Type': 'application/x-www-form-urlencoded',
+    //             "X-CSRFToken": csrfToken
+    //         },
+    //         body: `problemName=${docId("problemPanelTitle").innerText}`
+    //     }).then((res)=>res.json()).then((data)=>{
+    //         console.log(data)
+    //         if (data["docker"] !== "none") {
+    //             docId("problemPanelRunDocker").classList.add("deactive");
+    //             docId("problemPanelDockerPort").classList.remove("deactive");
+    //             docId("problemPanelDockerPort").innerHTML = `http://${host}:${data["docker"].split(":")[1].split("-")[0]}<br>nc ${host} ${data["docker"].split(":")[1].split("-")[0]}`;
+    //         }
+    //     })
+    // }, 1000);
+    
+    
 })
 
 function showProblem(problemName) {

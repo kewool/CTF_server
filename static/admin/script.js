@@ -7,6 +7,7 @@ let users = docId("users");
 let notice = docId("notice");
 let solved = docId("solved");
 let log = docId("log");
+let stop = docId("stop");
 
 function problemList() {
     problem.style.display = "block";
@@ -14,6 +15,7 @@ function problemList() {
     notice.style.display = "none";
     solved.style.display = "none";
     log.style.display = "none";
+    stop.style.display = "none";
 }
 
 function userList() {
@@ -22,6 +24,7 @@ function userList() {
     notice.style.display = "none";
     solved.style.display = "none";
     log.style.display = "none";
+    stop.style.display = "none";
 }
 
 function noticeList() {
@@ -30,6 +33,7 @@ function noticeList() {
     notice.style.display = "block";
     solved.style.display = "none";
     log.style.display = "none";
+    stop.style.display = "none";
 }
 
 function solvedList() {
@@ -38,6 +42,7 @@ function solvedList() {
     notice.style.display = "none";
     solved.style.display = "block";
     log.style.display = "none";
+    stop.style.display = "none";
 }
 
 function logList() {
@@ -46,6 +51,16 @@ function logList() {
     notice.style.display = "none";
     solved.style.display = "none";
     log.style.display = "block";
+    stop.style.display = "none";
+}
+
+function stopList() {
+    problem.style.display = "none";
+    users.style.display = "none";
+    notice.style.display = "none";
+    solved.style.display = "none";
+    log.style.display = "none";
+    stop.style.display = "block";
 }
 
 docId("userPwChange").addEventListener("click", ()=>{
@@ -326,5 +341,20 @@ function updateNotice(url, idx) {
     }).then((res) => res.json()).then((data) => {
         docId(idx).innerText = docId("noticeTitle").value
         docId("noticeResult").innerText = data["result"];
+    })
+}
+
+function stopCTF(url){
+    value = docId("ctfStopCheckbox").checked ? 1:0;
+    console.log(value)
+    fetch(url, {
+        method:'POST',
+        headers:{
+            'Content-Type': 'application/x-www-form-urlencoded',
+            "X-CSRFToken": csrfToken
+        },
+        body:`value=${value}`
+    }).then((res)=>res.json()).then((data)=>{
+        docId("stopResult").innerText = data["result"];
     })
 }
