@@ -67,7 +67,9 @@
                 <input type="checkbox" name="problemVisible" id="problemVisible" value="visible">
                 <label for="problemVisible">Visible</label>
                 <input type="checkbox" name="problemScoreVisible" id="problemScoreVisible" value="score">
-                <label for="problemScoreVisible">Score</label><br>
+                <label for="problemScoreVisible">Score</label>
+                <input type="checkbox" name="problemContainer" id="problemContainer" value="container">
+                <label for="problemContainer">Container</label><br>
                 <input type="button" id="problemSubmit">
                 <input type="button" id="problemDelete" value="delete" onclick="deleteProblem(`{{url_for('admin_page_ctf_delete')}}`)">
                 <input type="button" id="problemReset" value="reset" onclick="resetProblem(`{{url_for('admin_page_ctf_reset')}}`)">
@@ -102,11 +104,18 @@
         {%endfor%}
     </div>
     <div id="stop" style="display:none">
-        {%if stop%}
+        {%if stop[0]%}
         <input type="checkbox" id="ctfStopCheckbox" value="stop" checked>
         {%else%}
         <input type="checkbox" id="ctfStopCheckbox" value="stop">
         {%endif%}
+        {%if stop[1]%}
+        <input type="checkbox" id="ctfVisibleCheckbox" value="visible" checked>
+        {%else%}
+        <input type="checkbox" id="ctfVisibleCheckbox" value="visible">
+        {%endif%}
+        <label for="ctfStopCheckbox">stop</label>
+        <label for="ctfVisibleCheckbox">visible</label>
         <input type="button" id="ctfStop" value="run" onclick="stopCTF(`{{url_for('admin_page_ctf_stop')}}`)">
         <p id="stopResult"></p>
     </div>

@@ -78,7 +78,7 @@ def register_page():
 
 @app.route("/users", methods=['GET'])
 def user_list_page():
-    db.execute("SELECT ctf_user_name FROM ctf_users WHERE ctf_user_visible=1")
+    db.execute("SELECT ctf_user_name, ctf_user_introduce FROM ctf_users WHERE ctf_user_visible=1")
     user_list = db.fetchall()
     return render_template("user_list/index.html", user_list=user_list, userId=session.get('ctf_user_id', None))
 
@@ -121,6 +121,8 @@ def note_page():
 def ctf_list():
     if check_login():
         return abort(401)
+    if db.execute("SELECT visible FROM ctf_stop WHERE visible=0").fetchone():
+        return {"result":"beforestart"}
     problemList = db.execute("SELECT ctf_problem_type, ctf_problem_name, ctf_problem_score FROM ctf_problems WHERE ctf_problem_visible=1 ORDER BY ctf_problem_type asc, ctf_problem_score asc").fetchall()
     solvedList = db.execute("SELECT ctf_problem_name FROM ctf_solved WHERE ctf_user_id=?", (session.get("ctf_user_id"), )).fetchall()
     return {"contents":problemList, "solved":solvedList}
@@ -130,7 +132,7 @@ def ctf_get():
     if check_login():
         return abort(401)
     problemName, *_ = request.form.values()
-    problemContents = db.execute("SELECT ctf_problem_score, ctf_problem_contents, ctf_problem_file, ctf_problem_solved FROM ctf_problems WHERE ctf_problem_visible=1 AND ctf_problem_name=?", (problemName, )).fetchone()
+    problemContents = db.execute("SELECT ctf_problem_score, ctf_problem_contents, ctf_problem_file, ctf_problem_container, ctf_problem_solved FROM ctf_problems WHERE ctf_problem_visible=1 AND ctf_problem_name=?", (problemName, )).fetchone()
     return {"contents":problemContents, "docker": check_container(problemName)}
 
 @app.route("/api/ctf/solved", methods=['POST'])
@@ -138,14 +140,15 @@ def ctf_solved():
     if check_login():
         return abort(401)
     problemName, *_ = request.form.values()
-    problemSolved = db.execute("SELECT ctf_solved.ctf_user_name, ctf_problem_solved_date FROM ctf_solved INNER JOIN ctf_users ON ctf_solved.ctf_user_name=ctf_users.ctf_user_name WHERE ctf_solved.ctf_problem_name=? AND ctf_user_visible=1", (problemName, )).fetchall()
-    return {"contents":problemSolved}
+    problemSolved = db.execute("SELECT ctf_problem_solved FROM ctf_problems WHERE ctf_problem_name=?",(problemName,))
+    problemSolvedList = db.execute("SELECT ctf_solved.ctf_user_name, ctf_problem_solved_date FROM ctf_solved INNER JOIN ctf_users ON ctf_solved.ctf_user_name=ctf_users.ctf_user_name WHERE ctf_solved.ctf_problem_name=? AND ctf_user_visible=1", (problemName, )).fetchall()
+    return {"solved":problemSolved,"contents":problemSolvedList}
 
 @app.route("/api/flag/submit", methods=['POST'])
 def flag_submit():
     if check_login():
         abort(401)
-    if db.execute("SELECT * FROM ctf_stop WHERE stop=1").fetchone():
+    if db.execute("SELECT stop FROM ctf_stop WHERE stop=1").fetchone():
         return {"result":"timeover"}
     userId = session.get("ctf_user_id")
     problemName, flag, *_ = request.form.values()
@@ -181,7 +184,7 @@ def admin_page():
     log_list = db.execute("SELECT * FROM ctf_logs ORDER BY ctf_log_idx desc").fetchall()
     notice_list = db.execute("SELECT ctf_notice_idx, ctf_notice_title FROM ctf_notices ORDER BY ctf_notice_idx desc").fetchall()
     stop = db.execute("SELECT * FROM ctf_stop").fetchone()
-    return render_template("admin/index.html", user_list=user_list, problem_list=problem_list, solved_list=solved_list, log_list=log_list, notice_list=notice_list, stop=stop[0])
+    return render_template("admin/index.html", user_list=user_list, problem_list=problem_list, solved_list=solved_list, log_list=log_list, notice_list=notice_list, stop=stop)
 
 @app.route("/api/admin/ctf/get", methods=['POST'])
 def admin_page_ctf_get():
@@ -189,23 +192,25 @@ def admin_page_ctf_get():
     problemName = request.form["problemName"]
     db.execute("SELECT * FROM ctf_problems WHERE ctf_problem_name=?", (problemName,))
     problem = db.fetchone()
-    return {"ctf_problem_flag":problem[1], "ctf_problem_type":problem[2], "ctf_problem_contents":problem[3], "ctf_problem_file":problem[4], "ctf_problem_solved":problem[5], "ctf_problem_score":problem[6], "ctf_problem_visible":problem[7], "ctf_problem_visible_score":problem[8]}
+    return {"ctf_problem_flag":problem[1], "ctf_problem_type":problem[2], "ctf_problem_contents":problem[3], "ctf_problem_file":problem[4], "ctf_problem_solved":problem[5], "ctf_problem_score":problem[6], "ctf_problem_visible":problem[7], "ctf_problem_visible_score":problem[8], "ctf_problem_container":problem[9]}
 
 @app.route("/api/admin/ctf/add", methods=['POST'])
 def admin_page_ctf_add():
     check_admin()
-    problemName, problemFlag, problemType, problemContents, problemFile, problemVisible, problemScoreVisible, *_ = request.form.values()
+    problemName, problemFlag, problemType, problemContents, problemFile, problemVisible, problemScoreVisible, problemContainer, *_ = request.form.values()
     visible = 1 if problemVisible == "visible" else 0
     scoreVisible = 1 if problemScoreVisible == "visible" else 0
-    db.execute("INSERT INTO ctf_problems(ctf_problem_name, ctf_problem_flag, ctf_problem_type, ctf_problem_contents, ctf_problem_file, ctf_problem_solved, ctf_problem_score, ctf_problem_visible, ctf_problem_visible_score) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (problemName, problemFlag, problemType, problemContents, problemFile, 0, 1000, visible, scoreVisible))
+    container = 1 if problemContainer == "1" else 0
+    db.execute("INSERT INTO ctf_problems(ctf_problem_name, ctf_problem_flag, ctf_problem_type, ctf_problem_contents, ctf_problem_file, ctf_problem_solved, ctf_problem_score, ctf_problem_visible, ctf_problem_visible_score, ctf_problem_container) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (problemName, problemFlag, problemType, problemContents, problemFile, 0, 1000, visible, scoreVisible, container))
     return {"result":"successful", "problemName":problemName}
 
 @app.route("/api/admin/ctf/update", methods=['POST'])
 def admin_page_ctf_update():
     check_admin()
-    problemName, problemFlag, problemType, problemContents, problemFile, problemVisible, problemScoreVisible, *_ = request.form.values()
+    problemName, problemFlag, problemType, problemContents, problemFile, problemVisible, problemScoreVisible, problemContainer, *_ = request.form.values()
     visible = 1 if problemVisible == "visible" else 0
     scoreVisible = 1 if problemScoreVisible == "visible" else 0
+    container = 1 if problemContainer == "1" else 0
     scoreVisible_before = db.execute("SELECT ctf_problem_visible_score FROM ctf_problems WHERE ctf_problem_name=?", (problemName, )).fetchone()[0]
     if scoreVisible != scoreVisible_before:
         if scoreVisible:
@@ -214,7 +219,7 @@ def admin_page_ctf_update():
         else:
             db.execute("UPDATE ctf_users SET ctf_user_try=ctf_user_try-1 WHERE ctf_user_id IN (SELECT ctf_user_id FROM ctf_tried WHERE ctf_problem_name=?)", (problemName, ))
             db.execute("UPDATE ctf_users SET ctf_user_solved=ctf_user_solved-1, ctf_user_score=ctf_user_score-(SELECT ctf_problem_score FROM ctf_problems WHERE ctf_problem_name=?) WHERE ctf_user_id IN (SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name=?)", (problemName, problemName))
-    db.execute("UPDATE ctf_problems SET ctf_problem_flag=?, ctf_problem_type=?, ctf_problem_contents=?, ctf_problem_file=?, ctf_problem_visible=?, ctf_problem_visible_score=? WHERE ctf_problem_name=?",(problemFlag, problemType, problemContents, problemFile, visible, scoreVisible, problemName))
+    db.execute("UPDATE ctf_problems SET ctf_problem_flag=?, ctf_problem_type=?, ctf_problem_contents=?, ctf_problem_file=?, ctf_problem_visible=?, ctf_problem_visible_score=?, ctf_problem_container=? WHERE ctf_problem_name=?",(problemFlag, problemType, problemContents, problemFile, visible, scoreVisible, container, problemName))
     return {"result" : "successful"}
 
 @app.route("/api/admin/ctf/reset", methods=['POST'])
@@ -243,9 +248,9 @@ def admin_page_ctf_delete():
 @app.route("/api/admin/ctf/stop", methods=['POST'])
 def admin_page_ctf_stop():
     check_admin()
-    value, *_ = request.form.values()
+    stop, visible, *_ = request.form.values()
     try:
-        db.execute("UPDATE ctf_stop SET stop=?",value)
+        db.execute("UPDATE ctf_stop SET stop=?, visible=?",(stop,visible))
     except:
         return {"result":"error"}
     return {"result":"successful"}

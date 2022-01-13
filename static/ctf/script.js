@@ -60,6 +60,7 @@ docId("problemPanelSubmit").addEventListener("click", ()=>{
             docId("problemPanelSubmit").classList.add("deactive");
             docId("problemPanelFlagSolved").classList.remove("deactive");
             docId(docId("problemPanelTitle").innerText).classList.add("solved");
+            docId("problemPanelSolvedChange").innerText = `${parseInt(docId("problemPanelSolvedChange").innerText) + 1} Solved`
         } else if(data["result"] === "incorrect"){
             docId("problemPanelIncorrect").classList.remove("deactive");
         }
@@ -133,15 +134,18 @@ function showProblem(problemName) {
         body: `problemName=${problemName}`
     }).then((res)=>res.json()).then((data)=>{
         console.log(data)
-        docId("problemPanelSolvedChange").innerText = `${data["contents"][3]} Solved`
+        docId("problemPanelSolvedChange").innerText = `${data["contents"][4]} Solved`
         docId("problemPanelTitle").innerText = problemName;
         docId("problemPanelScore").innerText = data["contents"][0];
         docId("problemPanelContents").innerHTML = data["contents"][1];
-        if(data["docker"]!=="none") {
+        if(!data["contents"][3])
+            if(data["docker"]!=="none") {
+                docId("problemPanelRunDocker").classList.add("deactive");
+                docId("problemPanelDockerPort").classList.remove("deactive");
+                docId("problemPanelDockerPort").innerHTML = `http://${host}:${data["docker"].split(":")[1].split("-")[0]}<br>nc ${host} ${data["docker"].split(":")[1].split("-")[0]}`;
+            }
+        else
             docId("problemPanelRunDocker").classList.add("deactive");
-            docId("problemPanelDockerPort").classList.remove("deactive");
-            docId("problemPanelDockerPort").innerHTML = `http://${host}:${data["docker"].split(":")[1].split("-")[0]}<br>nc ${host} ${data["docker"].split(":")[1].split("-")[0]}`;
-        }
         if(!data["contents"][2])
             docId("problemPanelFile").classList.add("deactive");
         else
@@ -193,14 +197,14 @@ fetch("/api/ctf/list", {
 
 });
 
-setInterval(function() {
-    fetch("/api/ctf/list", {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            "X-CSRFToken": csrfToken
-        }
-    }).then((res) => res.json()).then((data) => {
+// setInterval(function() {
+//     fetch("/api/ctf/list", {
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/x-www-form-urlencoded',
+//             "X-CSRFToken": csrfToken
+//         }
+//     }).then((res) => res.json()).then((data) => {
         
-    });
-}, 10000);
+//     });
+// }, 10000);

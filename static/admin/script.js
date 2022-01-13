@@ -161,8 +161,9 @@ function getProblem(url, name, formURL) {
         docId("problemFile").value = data["ctf_problem_file"];
         docId("problemVisible").checked = data["ctf_problem_visible"] ? true : false;
         docId("problemScoreVisible").checked = data["ctf_problem_visible_score"] ? true : false;
+        docId("problemContainer").checked = data["ctf_problem_container"] ? true : false;
         docId("problemSubmit").value = "update";
-        docId("problemSubmit").setAttribute(    "onclick", `updateProblem("${formURL}")`);
+        docId("problemSubmit").setAttribute("onclick", `updateProblem("${formURL}")`);
         docId("problemDelete").style.display = "inline-block";
         docId("problemReset").style.display = "inline-block";
         docId("problemForm").style.display = "block";
@@ -170,17 +171,18 @@ function getProblem(url, name, formURL) {
 }
 
 function updateProblem(url) {
-    let type, visible, scoreVisible;
+    let type, visible, scoreVisible, container;
     for (var i of document.getElementsByName("problemType")) if (i.checked === true) type = i.value;
     if (docId("problemVisible").checked === true) visible = "visible";
     if (docId("problemScoreVisible").checked === true) scoreVisible = "visible";
+    if (docId("problemContainer").checked === true) container = 1;
     fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             "X-CSRFToken": csrfToken
         },
-        body: `problemName=${docId("problemName").value}&problemFlag=${docId("problemFlag").value}&problemType=${type}&problemContents=${docId("problemContents").value}&problemFile=${docId("problemFile").value}&problemVisible=${visible}&problemScoreVisible=${scoreVisible}`
+        body: `problemName=${docId("problemName").value}&problemFlag=${docId("problemFlag").value}&problemType=${type}&problemContents=${docId("problemContents").value}&problemFile=${docId("problemFile").value}&problemVisible=${visible}&problemScoreVisible=${scoreVisible}&problemContainer=${container}`
     }).then((res) => res.json()).then((data) => {
         docId("problemResult").innerText = data["result"];
     })
@@ -196,6 +198,7 @@ function addProblemForm(formURL, getURL, updateURL) {
     docId("problemFile").value = "";
     docId("problemVisible").checked = true;
     docId("problemScoreVisible").checked = true;
+    docId("problemContainer").checked = false;
     docId("problemSubmit").setAttribute("onclick", `addProblem("${formURL}", "${getURL}", "${updateURL}")`);
     docId("problemSubmit").value = "add";
     docId("problemDelete").style.display = "none";
@@ -204,20 +207,21 @@ function addProblemForm(formURL, getURL, updateURL) {
 }
 
 function addProblem(url, getURL, updateURL) {
-    let type, visible, scoreVisible;
+    let type, visible, scoreVisible, container;
     for (var i of document.getElementsByName("problemType")) if (i.checked === true) type = i.value;
     if(docId("problemName").value === null || docId("problemFlag").value === null || type === undefined){
         return docId("problemResult").innerText = "required problemName, problemFlag, problemType";
     }
     if (docId("problemVisible").checked === true) visible = "visible";
     if (docId("problemScoreVisible").checked === true) scoreVisible = "visible";
+    if (docId("problemContainer").checked === true) container = 1;
     fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             "X-CSRFToken": csrfToken
         },
-        body: `problemName=${docId("problemName").value}&problemFlag=${docId("problemFlag").value}&problemType=${type}&problemContents=${docId("problemContents").value}&problemFile=${docId("problemFile").value}&problemVisible=${visible}&problemScoreVisible=${scoreVisible}`
+        body: `problemName=${docId("problemName").value}&problemFlag=${docId("problemFlag").value}&problemType=${type}&problemContents=${docId("problemContents").value}&problemFile=${docId("problemFile").value}&problemVisible=${visible}&problemScoreVisible=${scoreVisible}&problemContainer=${container}`
     }).then((res) => res.json()).then((data) => {
         if (data["result"] !== "error") {
             let div = document.createElement("div");
@@ -345,15 +349,15 @@ function updateNotice(url, idx) {
 }
 
 function stopCTF(url){
-    value = docId("ctfStopCheckbox").checked ? 1:0;
-    console.log(value)
+    stop = docId("ctfStopCheckbox").checked ? 1:0;
+    visible = docId("ctfVisibleCheckbox").checked ? 1:0;
     fetch(url, {
         method:'POST',
         headers:{
             'Content-Type': 'application/x-www-form-urlencoded',
             "X-CSRFToken": csrfToken
         },
-        body:`value=${value}`
+        body:`stop=${stop}&visible=${visible}`
     }).then((res)=>res.json()).then((data)=>{
         docId("stopResult").innerText = data["result"];
     })
