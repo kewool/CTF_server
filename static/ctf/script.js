@@ -5,6 +5,8 @@ function docId(name) {
     return document.getElementById(name);
 }
 
+
+
 docId("background").addEventListener("click", () => {
     docId("background").classList.remove("active");
     docId("problemPanel").classList.remove("active");
@@ -14,7 +16,7 @@ docId("problemPanelSolvedChange").addEventListener("click", ()=>{
     docId("problemPanelChallange").classList.remove("active");
     docId("problemPanelSolvedList").innerText = "";
     docId("problemPanelSolved").classList.add("active");
-    fetch("/api/ctf/solved", {
+    fetch(`https://${host}/api/ctf/solved`, {
         method:'POST',
         headers:{
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -45,7 +47,7 @@ docId("backArrow").addEventListener("click", ()=>{
 })
 
 docId("problemPanelSubmit").addEventListener("click", ()=>{
-    fetch("/api/flag/submit", {
+    fetch(`https://${host}/api/flag/submit`, {
         method: 'POST',
         headers:{
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -68,41 +70,38 @@ docId("problemPanelSubmit").addEventListener("click", ()=>{
 })
 
 docId("problemPanelRunDocker").addEventListener("click", ()=>{
-    fetch("/api/ctf/docker/run",{
+    fetch(`https://${host}/api/ctf/docker/run`,{
         method: 'POST',
         headers:{
             'Content-Type': 'application/x-www-form-urlencoded',
             "X-CSRFToken": csrfToken
         },
-        body: `problemName=${docId("problemPanelTitle").innerText}`
+        body: `problemName=${problemName}`
     }).then((res) => res.json()).then((data) => {
         console.log(data)
-        if (data["docker"]) {
-            docId("problemPanelRunDocker").classList.add("deactive");
-            docId("problemPanelDockerPort").classList.remove("deactive");
-            docId("problemPanelDockerPort").innerHTML = `http://${host}:${data["docker"].split(":")[1].split("-")[0]}<br>nc ${host} ${data["docker"].split(":")[1].split("-")[0]}`;
-        }
+        // if (data["docker"]) {
+        //     docId("problemPanelRunDocker").classList.add("deactive");
+        //     docId("problemPanelDockerPort").classList.remove("deactive");
+        //     docId("problemPanelDockerPort").innerHTML = `http://${host}:${data["docker"].split(":")[1].split("-")[0]}<br>nc ${host} ${data["docker"].split(":")[1].split("-")[0]}`;
+        // }
     })
-
-
-    // setTimeout(() => {
-    //     fetch("/api/ctf/docker/get", {
-    //         method: 'POST',
-    //         headers:{
-    //             'Content-Type': 'application/x-www-form-urlencoded',
-    //             "X-CSRFToken": csrfToken
-    //         },
-    //         body: `problemName=${docId("problemPanelTitle").innerText}`
-    //     }).then((res)=>res.json()).then((data)=>{
-    //         console.log(data)
-    //         if (data["docker"] !== "none") {
-    //             docId("problemPanelRunDocker").classList.add("deactive");
-    //             docId("problemPanelDockerPort").classList.remove("deactive");
-    //             docId("problemPanelDockerPort").innerHTML = `http://${host}:${data["docker"].split(":")[1].split("-")[0]}<br>nc ${host} ${data["docker"].split(":")[1].split("-")[0]}`;
-    //         }
-    //     })
-    // }, 1000);
-    
+    setTimeout(() => {
+        fetch(`https://${host}/api/ctf/docker/get`, {
+            method: 'POST',
+            headers:{
+                'Content-Type': 'application/x-www-form-urlencoded',
+                "X-CSRFToken": csrfToken
+            },
+            body: `problemName=${docId("problemPanelTitle").innerText}`
+        }).then((res)=>res.json()).then((data)=>{
+            console.log(data)
+            if (data["docker"] !== "none") {
+                docId("problemPanelRunDocker").classList.add("deactive");
+                docId("problemPanelDockerPort").classList.remove("deactive");
+                docId("problemPanelDockerPort").innerHTML = `<a target="_blank" href="http://${host}:${data["docker"].split(":")[1].split("-")[0]}">http://${host}:${data["docker"].split(":")[1].split("-")[0]}</a><br>nc ${host} ${data["docker"].split(":")[1].split("-")[0]}`;
+            }
+        })
+    }, 1000);
     
 })
 
@@ -125,7 +124,7 @@ function showProblem(problemName) {
     docId("problemPanelFlagSolved").classList.add("deactive");
     docId("background").classList.add("active");
     docId("problemPanel").classList.add("active");
-    fetch("/api/ctf/get", {
+    fetch(`https://${host}/api/ctf/get`, {
         method: 'POST',
         headers:{
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -142,7 +141,7 @@ function showProblem(problemName) {
             if(data["docker"]!=="none") {
                 docId("problemPanelRunDocker").classList.add("deactive");
                 docId("problemPanelDockerPort").classList.remove("deactive");
-                docId("problemPanelDockerPort").innerHTML = `http://${host}:${data["docker"].split(":")[1].split("-")[0]}<br>nc ${host} ${data["docker"].split(":")[1].split("-")[0]}`;
+                docId("problemPanelDockerPort").innerHTML = `<a href="http://${host}:${data["docker"].split(":")[1].split("-")[0]}" target="_blank">http://${host}:${data["docker"].split(":")[1].split("-")[0]}</a><br>nc ${host} ${data["docker"].split(":")[1].split("-")[0]}`;
             }
         else
             docId("problemPanelRunDocker").classList.add("deactive");
@@ -158,7 +157,7 @@ function showProblem(problemName) {
     })
 }
 
-fetch("/api/ctf/list", {
+fetch(`https://${host}/api/ctf/list`, {
     method: 'POST',
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded',

@@ -35,8 +35,8 @@
         </div>
     </div>
     <script>
-        csrfToken="{{csrf_token()}}";
-        host = "{{host}}";
+        let csrfToken="{{csrf_token()}}";
+        let host = "{{session.get('ctf_user_host')}}";
     </script>
     <div id="background" class="background" style="display:none;"></div>
 </body>

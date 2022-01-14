@@ -1,23 +1,15 @@
 from flask import Flask, render_template, request, redirect, url_for, session, abort
 from flask_wtf.csrf import CSRFProtect, CSRFError
 import os
-import subprocess
 import random as rd
 import datetime
 import logging
 from db import *
-logging.basicConfig(filename = "logs/project.log", level = logging.INFO)
+logging.basicConfig(filename = "logs/main.log", level = logging.INFO)
 app = Flask(__name__, template_folder="pages/")
 csrf = CSRFProtect(app)
-host = "ctf.kewool.net"
-dockerHost = "ctf.nahee.kim"
-SECRET_KEY = os.urandom(32)
-
-def run_docker(token, problemName):
-    try:
-        subprocess.Popen(f"docker run -e TOKEN={token} -e HOST={host} -d --rm --name {token} -p {rd.randrange(20000,30000)}:3000 --cpus=0.1 --memory=128m --memory-swap=128m ctf_{problemName}", stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-    except:
-        run_docker()
+dockerHost = ["ctf.nahee.kim", "sunrin.hs.kr"]
+SECRET_KEY = "secretkey"
 
 def check_admin():
     userId = session.get("ctf_user_id")
@@ -28,13 +20,6 @@ def check_admin():
 
 def check_login():
     return not session.get("ctf_user_id", None)
-
-def check_container(problemName):
-    token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest() + problemName
-    run = subprocess.Popen("docker ps --format '{{.Ports}} {{.Names}}' | grep " + token, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).communicate()[0].decode('utf-8').split(" ")[0]
-    if run == "":
-        return "none"
-    return run
 
 @app.route("/", methods=['GET'])
 def main():
@@ -55,6 +40,7 @@ def login_page():
             return render_template("login/index.html", invalid=1)
         elif dbId[0] == userId:
             session["ctf_user_id"] = userId
+            session["ctf_user_host"] = dockerHost[rd.randrange(0,len(dockerHost))]
         return redirect(url_for("main"))
 
 @app.route("/logout", methods=['GET'])
@@ -68,6 +54,8 @@ def register_page():
         return render_template("register/index.html")
     elif request.method == 'POST':
         userId, userPw, userName, userEmail, userSchool, *_ = request.form.values()
+        userId.replace(" ","")
+        userPw.replace(" ","")
         db.execute("SELECT * from ctf_users WHERE ctf_user_id=?", (userId, ))
         if db.fetchone() == None:
             password = hashlib.sha256(userPw.encode()).hexdigest()
@@ -110,7 +98,7 @@ def user_scoreboard_page():
 def ctf_page():
     if check_login():
         return redirect(url_for("login_page"))
-    return render_template("ctf/index.html", host=dockerHost)
+    return render_template("ctf/index.html", userId=session.get('ctf_user_id', None))
 
 @app.route("/notice", methods=['GET'])
 def note_page():
@@ -122,7 +110,8 @@ def ctf_list():
     if check_login():
         return abort(401)
     if db.execute("SELECT visible FROM ctf_stop WHERE visible=0").fetchone():
-        return {"result":"beforestart"}
+        if not db.execute("SELECT ctf_user_admin FROM ctf_users WHERE ctf_user_id=?", (session.get("ctf_user_id", " "), )).fetchone()[0]:
+            return {"result":"beforestart"}
     problemList = db.execute("SELECT ctf_problem_type, ctf_problem_name, ctf_problem_score FROM ctf_problems WHERE ctf_problem_visible=1 ORDER BY ctf_problem_type asc, ctf_problem_score asc").fetchall()
     solvedList = db.execute("SELECT ctf_problem_name FROM ctf_solved WHERE ctf_user_id=?", (session.get("ctf_user_id"), )).fetchall()
     return {"contents":problemList, "solved":solvedList}
@@ -140,7 +129,7 @@ def ctf_solved():
     if check_login():
         return abort(401)
     problemName, *_ = request.form.values()
-    problemSolved = db.execute("SELECT ctf_problem_solved FROM ctf_problems WHERE ctf_problem_name=?",(problemName,))
+    problemSolved = db.execute("SELECT ctf_problem_solved FROM ctf_problems WHERE ctf_problem_name=?",(problemName,)).fetchone()[0]
     problemSolvedList = db.execute("SELECT ctf_solved.ctf_user_name, ctf_problem_solved_date FROM ctf_solved INNER JOIN ctf_users ON ctf_solved.ctf_user_name=ctf_users.ctf_user_name WHERE ctf_solved.ctf_problem_name=? AND ctf_user_visible=1", (problemName, )).fetchall()
     return {"solved":problemSolved,"contents":problemSolvedList}
 
@@ -333,42 +322,6 @@ def admin_page_notice_delete():
     notice_idx, *_ = request.form.values()
     db.execute("DELETE FROM ctf_notices WHERE ctf_notice_idx=?", (notice_idx, ))
     return {"result":"successful"}
-
-@app.route("/api/ctf/docker/get", methods=['POST'])
-def ctf_get_api():
-    if check_login():
-        return redirect(url_for("login_page"))
-    problemName, *_ = request.form.values()
-    token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest() + problemName
-    run = subprocess.Popen("docker ps --format '{{.Ports}} {{.Names}}' | grep " + token, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).communicate()[0].decode('utf-8').split(" ")[0]
-    if run == "":
-        return {"docker":"none"}
-    return {"docker":run}
-
-@app.route('/api/ctf/docker/run', methods=['POST'])
-def ctf_run_api():
-    if check_login():
-        return redirect(url_for("login_page"))
-    problemName, *_ = request.form.values()
-    check = check_container(problemName)
-    if check != "none":
-        return {"docker":check}
-    token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest()
-    # if os.system(f"docker ps --format '{{.Image}} {{.Names}}' | grep {token}").read().split(" ")[0] == problemName:
-    #     return {"result":os.popen(f"docker ps --format '{{.Ports}}' | grep {token}").read().split(" ")[0]}
-    subprocess.Popen(f"docker kill $(docker ps -q -f name={token})", stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-    token += problemName
-    run_docker(token, problemName)
-    return {"docker":subprocess.Popen("docker ps --format '{{.Ports}} {{.Names}}' | grep " + token, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).communicate()[0].decode('utf-8').split(" ")[0]}
-    
-
-@app.route('/api/ctf/docker/stop/<token>', methods=['GET'])
-def ctf_stop_api(token):
-    try:
-        subprocess.Popen(f"docker kill {token}", stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-    except:
-        return 'failed'
-    return 'successful'
 
 @app.errorhandler(500)
 def page_not_found(e):
