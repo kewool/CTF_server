@@ -16,7 +16,7 @@ docId("problemPanelSolvedChange").addEventListener("click", ()=>{
     docId("problemPanelChallange").classList.remove("active");
     docId("problemPanelSolvedList").innerText = "";
     docId("problemPanelSolved").classList.add("active");
-    fetch(`https://${host}/api/ctf/solved`, {
+    fetch(`/api/ctf/solved`, {
         method:'POST',
         headers:{
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -47,7 +47,7 @@ docId("backArrow").addEventListener("click", ()=>{
 })
 
 docId("problemPanelSubmit").addEventListener("click", ()=>{
-    fetch(`https://${host}/api/flag/submit`, {
+    fetch(`/api/flag/submit`, {
         method: 'POST',
         headers:{
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -124,7 +124,7 @@ function showProblem(problemName) {
     docId("problemPanelFlagSolved").classList.add("deactive");
     docId("background").classList.add("active");
     docId("problemPanel").classList.add("active");
-    fetch(`https://${host}/api/ctf/get`, {
+    fetch(`/api/ctf/get`, {
         method: 'POST',
         headers:{
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -157,7 +157,7 @@ function showProblem(problemName) {
     })
 }
 
-fetch(`https://${host}/api/ctf/list`, {
+fetch(`/api/ctf/list`, {
     method: 'POST',
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
