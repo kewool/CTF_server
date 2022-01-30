@@ -137,12 +137,22 @@ function showProblem(problemName) {
         docId("problemPanelTitle").innerText = problemName;
         docId("problemPanelScore").innerText = data["contents"][0];
         docId("problemPanelContents").innerHTML = data["contents"][1];
-        if(!data["contents"][3])
-            if(data["docker"]!=="none") {
-                docId("problemPanelRunDocker").classList.add("deactive");
-                docId("problemPanelDockerPort").classList.remove("deactive");
-                docId("problemPanelDockerPort").innerHTML = `<a href="http://${host}:${data["docker"].split(":")[1].split("-")[0]}" target="_blank">http://${host}:${data["docker"].split(":")[1].split("-")[0]}</a><br>nc ${host} ${data["docker"].split(":")[1].split("-")[0]}`;
-            }
+        if(data["contents"][3]){
+            fetch(`https://${host}/api/ctf/docker/get`, {
+                method: 'POST',
+                headers:{
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    "X-CSRFToken": csrfToken
+                },
+                body: `problemName=${problemName}`
+            }).then((res)=>res.json()).then((data)=>{
+                if(data["docker"]!=="none") {
+                    docId("problemPanelRunDocker").classList.add("deactive");
+                    docId("problemPanelDockerPort").classList.remove("deactive");
+                    docId("problemPanelDockerPort").innerHTML = `<a href="http://${host}:${data["docker"].split(":")[1].split("-")[0]}" target="_blank">http://${host}:${data["docker"].split(":")[1].split("-")[0]}</a><br>nc ${host} ${data["docker"].split(":")[1].split("-")[0]}`;
+                }
+            })
+        }
         else
             docId("problemPanelRunDocker").classList.add("deactive");
         if(!data["contents"][2])

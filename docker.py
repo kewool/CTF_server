@@ -1,22 +1,25 @@
-from flask import Flask, request, redirect, session
-from flask_wtf.csrf import CSRFProtect, CSRFError
+from flask import Flask, request, redirect, session, url_for
+from flask_cors import CORS, cross_origin
 import subprocess
 import hashlib
+import logging
 import random as rd
 app = Flask(__name__)
-csrf = CSRFProtect(app)
+logging.basicConfig(filename = "logs/main.log", level = logging.INFO)
 SECRET_KEY = "secretkey"
-def check_login():
-    return not session.get("ctf_user_id", None)
+app.config["SECRET_KEY"] = SECRET_KEY
+app.config["WTF_CSRF_SECRET_KEY"] = SECRET_KEY
+CORS(app)
+problemNameJson = {"CookieCon":"cookiecon","Color":"color","통신 보안":"communicationsecurity","math":"math","name":"name","club":"club","strange_bank":"strange_bank","Ahoy~!":"ahoy","bashrc":"bashrc"}
 
-def check_container(problemName):
-    token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest() + problemName
+def check_container(problemName, userId):
+    token = hashlib.sha256(userId.encode() + SECRET_KEY).hexdigest() + problemName
     run = subprocess.Popen("docker ps --format '{{.Ports}} {{.Names}}' | grep " + token, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).communicate()[0].decode('utf-8').split(" ")[0]
     if run == "":
         return "none"
     return run
 
-def run_docker(token, problemName):
+def run_docker(token, problemName, userId, host):
     try:
         problemName = problemName.replace(" ", "").replace(";","").replace("$","")
         subprocess.Popen(f"docker run -e TOKEN={token} -e HOST={host} -d --rm --name {token} -p {rd.randrange(20000,30000)}:3000 --cpus=0.1 --memory=128m --memory-swap=128m ctf_{problemName}", stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
@@ -25,10 +28,9 @@ def run_docker(token, problemName):
 
 @app.route("/api/ctf/docker/get", methods=['POST'])
 def ctf_get_api():
-    if check_login():
-        return redirect(url_for("login_page"))
-    problemName, *_ = request.form.values()
-    token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest()
+    problemName, userId, *_ = request.form.values()
+    problemName = problemNameJson[problemName]
+    token = hashlib.sha256(userId.encode() + SECRET_KEY).hexdigest() + problemName
     run = subprocess.Popen("docker ps --format '{{.Ports}} {{.Names}}' | grep " + token, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).communicate()[0].decode('utf-8').split(" ")[0]
     if run == "":
         return {"docker":"none"}
@@ -36,18 +38,17 @@ def ctf_get_api():
 
 @app.route('/api/ctf/docker/run', methods=['POST'])
 def ctf_run_api():
-    if check_login():
-        return redirect(url_for("login_page"))
-    problemName, *_ = request.form.values()
-    check = check_container(problemName)
+    problemName, userId, host, *_ = request.form.values()
+    problemName = problemNameJson[problemName]
+    check = check_container(problemName, userId)
     if check != "none":
         return {"docker":check}
-    token = hashlib.sha256(session.get("ctf_user_id").encode() + SECRET_KEY).hexdigest()
+    token = hashlib.sha256(userId.encode() + SECRET_KEY).hexdigest()
     # if os.system(f"docker ps --format '{{.Image}} {{.Names}}' | grep {token}").read().split(" ")[0] == problemName:
     #     return {"result":os.popen(f"docker ps --format '{{.Ports}}' | grep {token}").read().split(" ")[0]}
     subprocess.Popen(f"docker kill $(docker ps -q -f name={token})", stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
     token += problemName
-    run_docker(token, problemName)
+    run_docker(token, problemName, userId, host)
     return {"docker":subprocess.Popen("docker ps --format '{{.Ports}} {{.Names}}' | grep " + token, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).communicate()[0].decode('utf-8').split(" ")[0]}
     
 
@@ -61,5 +62,4 @@ def ctf_stop_api(token):
     return 'successful'
 
 if __name__ == '__main__':
-    app.config["SECRET_KEY"] = SECRET_KEY
     app.run(port=5325)

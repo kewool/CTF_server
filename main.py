@@ -7,9 +7,11 @@ import logging
 from db import *
 logging.basicConfig(filename = "logs/main.log", level = logging.INFO)
 app = Flask(__name__, template_folder="pages/")
+SECRET_KEY = "secretkey"
+app.config["SECRET_KEY"] = SECRET_KEY
+app.config["WTF_CSRF_SECRET_KEY"] = SECRET_KEY
 csrf = CSRFProtect(app)
 dockerHost = ["ctf.nahee.kim", "sunrin.hs.kr"]
-SECRET_KEY = "secretkey"
 
 def check_admin():
     userId = session.get("ctf_user_id")
@@ -122,7 +124,7 @@ def ctf_get():
         return abort(401)
     problemName, *_ = request.form.values()
     problemContents = db.execute("SELECT ctf_problem_score, ctf_problem_contents, ctf_problem_file, ctf_problem_container, ctf_problem_solved FROM ctf_problems WHERE ctf_problem_visible=1 AND ctf_problem_name=?", (problemName, )).fetchone()
-    return {"contents":problemContents, "docker": check_container(problemName)}
+    return {"contents":problemContents}
 
 @app.route("/api/ctf/solved", methods=['POST'])
 def ctf_solved():
@@ -155,8 +157,8 @@ def flag_submit():
         db.execute("UPDATE ctf_problems SET ctf_problem_solved=ctf_problem_solved+1 WHERE ctf_problem_name=?", (problemName, ))
         db.execute("UPDATE ctf_problems SET ctf_problem_score=ctf_problem_score-(ctf_problem_solved-1)*2 WHERE ctf_problem_name=? AND ctf_problem_score>70", (problemName, ))
         db.execute("SELECT ctf_problem_solved FROM ctf_problems WHERE ctf_problem_name=?", (problemName, ))
+        db.execute(f"UPDATE ctf_users SET ctf_user_score=ctf_user_score-? WHERE ctf_user_id IN (SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name=?) WHERE (SELECT ctf_problem_score FROM ctf_problems WHERE ctf_problem_name=?) > 70", (score, problemName, problemName))
         score = (db.fetchone()[0] - 1) * 2
-        db.execute(f"UPDATE ctf_users SET ctf_user_score=ctf_user_score-? WHERE ctf_user_id IN (SELECT ctf_user_id FROM ctf_solved WHERE ctf_problem_name=?)", (score, problemName))
     else:
         db.execute("UPDATE ctf_users SET ctf_user_try=ctf_user_try+1 WHERE ctf_user_id=?", (userId, ))
         db.execute("INSERT INTO ctf_logs(ctf_user_id, ctf_problem_name, ctf_correct_answer, ctf_log_flag, ctf_log_date, ctf_log_user_ip) VALUES (?, ?, ?, ?, ?, ?)", (userId, problemName, "incorrect", flag, str(datetime.datetime.now()), request.headers.get("CF-Connecting-IP")))
@@ -332,5 +334,4 @@ def handle_csrf_error(e):
     return render_template('error/index.html')
 
 if __name__ == '__main__':
-    app.config["SECRET_KEY"] = SECRET_KEY
     app.run(port=5324)
